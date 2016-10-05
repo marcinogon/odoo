@@ -1,17 +1,18 @@
+# -*- coding: utf-8 -*-
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
+
 import base64
 import json
-from operator import itemgetter
 import psycopg2
 import werkzeug
+
+from operator import itemgetter
 from werkzeug import url_encode
 
-import openerp
-from openerp import SUPERUSER_ID
-from openerp import http
-from openerp.exceptions import AccessError
-from openerp.http import request
-
-from openerp.addons.web.controllers.main import binary_content
+from odoo import api, http, registry, SUPERUSER_ID
+from odoo.addons.web.controllers.main import binary_content
+from odoo.exceptions import AccessError
+from odoo.http import request
 
 
 class MailController(http.Controller):
@@ -29,10 +30,10 @@ class MailController(http.Controller):
         for db in dbs:
             message = dbs[db].decode('base64')
             try:
-                registry = openerp.registry(db)
-                with registry.cursor() as cr:
-                    mail_thread = registry['mail.thread']
-                    mail_thread.message_process(cr, SUPERUSER_ID, None, message)
+                db_registry = registry(db)
+                with db_registry.cursor() as cr:
+                    env = api.Environment(cr, SUPERUSER_ID, {})
+                    env['mail.thread'].message_process(None, message)
             except psycopg2.Error:
                 pass
         return True
@@ -113,35 +114,37 @@ class MailController(http.Controller):
             return self._redirect_to_messaging()
 
         # find the access action using sudo to have the details about the access link
-        RecordModel = request.env[model]
-        record_sudo = RecordModel.sudo().browse(res_id).exists()
-        if not record_sudo:
+        RecordModel = request.env[model].sudo(uid)
+        record = RecordModel.browse(res_id).exists()
+        if not record:
             # record does not seem to exist -> redirect to login
             return self._redirect_to_messaging()
-        record_action = record_sudo.get_access_action()
+        record_action = record.get_access_action()
+
+        # only URL redirections or window actions supported currently
+        if not record_action['type'] in ('ir.actions.act_url', 'ir.actions.act_window'):
+            return self._redirect_to_messaging()
 
         # the record has an URL redirection: use it directly
         if record_action['type'] == 'ir.actions.act_url':
             return werkzeug.utils.redirect(record_action['url'])
-        # other choice: act_window (no support of anything else currently)
-        elif not record_action['type'] == 'ir.actions.act_window':
-            return self._redirect_to_messaging()
 
         # the record has a window redirection: check access rights
-        if not RecordModel.sudo(uid).check_access_rights('read', raise_exception=False):
+        if not RecordModel.check_access_rights('read', raise_exception=False):
             return self._redirect_to_messaging()
         try:
-            RecordModel.sudo(uid).browse(res_id).exists().check_access_rule('read')
+            record.check_access_rule('read')
         except AccessError:
             return self._redirect_to_messaging()
 
+        # at this point user can read the document so no issue with get_formview_id
         query = {}
         url_params = {
             'view_type': record_action['view_type'],
             'model': model,
             'id': res_id,
             'active_id': res_id,
-            'view_id': record_sudo.get_formview_id(),
+            'view_id': record.get_formview_id(),
             'action': record_action.get('id'),
         }
         url = '/web?%s#%s' % (url_encode(query), url_encode(url_params))
@@ -192,7 +195,7 @@ class MailController(http.Controller):
         return werkzeug.utils.redirect('/mail/view?%s' % url_encode({'model': model, 'res_id': res_id}))
 
     @http.route('/mail/assign', type='http', auth='user')
-    def mail_action_assign(self, model, res_id, **kwargs):
+    def mail_action_assign(self, model, res_id):
         if model not in request.env:
             return self._redirect_to_messaging()
         Model = request.env[model]
@@ -215,14 +218,18 @@ class MailController(http.Controller):
 
     @http.route('/mail/<string:res_model>/<int:res_id>/avatar/<int:partner_id>', type='http', auth='public')
     def avatar(self, res_model, res_id, partner_id):
-        headers = [[('Content-Type', 'image/png')]]
+        headers = [('Content-Type', 'image/png')]
+        status = 200
         content = 'R0lGODlhAQABAIABAP///wAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='  # default image is one white pixel
         if res_model in request.env:
             try:
                 # if the current user has access to the document, get the partner avatar as sudo()
                 request.env[res_model].browse(res_id).check_access_rule('read')
                 if partner_id in request.env[res_model].browse(res_id).sudo().exists().message_ids.mapped('author_id').ids:
-                    status, headers, content = binary_content(model='res.partner', id=partner_id, field='image_medium', default_mimetype='image/png', env=request.env(user=openerp.SUPERUSER_ID))
+                    status, headers, _content = binary_content(model='res.partner', id=partner_id, field='image_medium', default_mimetype='image/png', env=request.env(user=SUPERUSER_ID))
+                    # binary content return an empty string and not a placeholder if obj[field] is False
+                    if _content != '':
+                        content = _content
                     if status == 304:
                         return werkzeug.wrappers.Response(status=304)
             except AccessError:

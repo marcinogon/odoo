@@ -3,18 +3,15 @@
 # * account_check_printing
 # 
 # Translators:
-# fausthuang, 2015
-# fausthuang, 2015
 # Jeffery Chenn <jeffery9@gmail.com>, 2016
-# zhining wu <wzn63@21cn.com>, 2015
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo 9.0\n"
+"Project-Id-Version: Odoo Server 9.saas~10c\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-14 10:27+0000\n"
-"PO-Revision-Date: 2016-06-04 05:46+0000\n"
-"Last-Translator: Jeffery Chenn <jeffery9@gmail.com>\n"
-"Language-Team: Chinese (China) (http://www.transifex.com/odoo/odoo-9/language/zh_CN/)\n"
+"POT-Creation-Date: 2016-08-18 14:07+0000\n"
+"PO-Revision-Date: 2016-08-18 14:07+0000\n"
+"Last-Translator: Jeffery Chenn <jeffery9@gmail.com>, 2016\n"
+"Language-Team: Chinese (China) (https://www.transifex.com/odoo/teams/41243/zh_CN/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
@@ -22,7 +19,7 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #. module: account_check_printing
-#: code:addons/account_check_printing/account_journal.py:55
+#: code:addons/account_check_printing/account_journal.py:56
 #, python-format
 msgid " : Check Number Sequence"
 msgstr " : 支票编号序列"
@@ -108,7 +105,7 @@ msgstr "待打印支票"
 #. module: account_check_printing
 #: model:ir.model.fields,field_description:account_check_printing.field_print_prenumbered_checks_create_uid
 msgid "Created by"
-msgstr "创建者"
+msgstr "创建人"
 
 #. module: account_check_printing
 #: model:ir.model.fields,field_description:account_check_printing.field_print_prenumbered_checks_create_date
@@ -146,12 +143,12 @@ msgstr "最后修改日"
 #. module: account_check_printing
 #: model:ir.model.fields,field_description:account_check_printing.field_print_prenumbered_checks_write_uid
 msgid "Last Updated by"
-msgstr "最近更新者"
+msgstr "最后更新人"
 
 #. module: account_check_printing
 #: model:ir.model.fields,field_description:account_check_printing.field_print_prenumbered_checks_write_date
 msgid "Last Updated on"
-msgstr "最近更新时间"
+msgstr "最后更新时间"
 
 #. module: account_check_printing
 #: model:ir.model.fields,field_description:account_check_printing.field_account_journal_check_manual_sequencing
@@ -248,7 +245,7 @@ msgid ""
 "The selected journal is configured to print check numbers. If your pre-"
 "printed check paper already has numbers or if the current numbering is "
 "wrong, you can change it in the journal configuration page."
-msgstr "被选的分类账被配置成打印支票号码。如果预先印制支票纸已经有号码或者当前的号码是错误的你可以在分类账配置页面改正"
+msgstr "被选的日记账被配置成打印支票号码。如果预先印制支票纸已经有号码或者当前的号码是错误的你可以在日记账配置页面改正"
 
 #. module: account_check_printing
 #: code:addons/account_check_printing/account_payment.py:135
@@ -256,7 +253,9 @@ msgstr "被选的分类账被配置成打印支票号码。如果预先印制支
 msgid ""
 "There is no check layout configured.\n"
 "Make sure the proper check printing module is installed and its configuration (in company settings > 'Configuration' tab) is correct."
-msgstr "发票显示未配置\n请确保正确的打印模块被安装并且配置（公司设置>'配置'页面）正确"
+msgstr ""
+"发票显示未配置\n"
+"请确保正确的打印模块被安装并且配置（公司设置>'配置'页面）正确"
 
 #. module: account_check_printing
 #: model:ir.ui.view,arch_db:account_check_printing.print_pre_numbered_checks_view

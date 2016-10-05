@@ -4,6 +4,7 @@ odoo.define('web.ListView', function (require) {
 
 var core = require('web.core');
 var data = require('web.data');
+var data_manager = require('web.data_manager');
 var DataExport = require('web.DataExport');
 var formats = require('web.formats');
 var common = require('web.list_common');
@@ -36,6 +37,7 @@ var row_decoration = [
 var ListView = View.extend({
     _template: 'ListView',
     accesskey: "l",
+    require_fields: true,
     defaults: _.extend({}, View.prototype.defaults, {
         // records can be selected one by one
         selectable: true,
@@ -151,6 +153,7 @@ var ListView = View.extend({
         }
     },
     willStart: function() {
+        var self = this;
         // Retrieve the decoration defined on the model's list view
         this.decoration = _.pick(this.fields_view.arch.attrs, function(value, key) {
             return row_decoration.indexOf(key) >= 0;
@@ -158,7 +161,10 @@ var ListView = View.extend({
         this.decoration = _.mapObject(this.decoration, function(value) {
             return py.parse(py.tokenize(value));
         });
-        return this._super();
+        var fields_def = data_manager.load_fields(this.dataset).then(function(fields_get) {
+            self.fields_get = fields_get;
+        });
+        return $.when(this._super(), fields_def);
     },
     /**
      * Set a custom Group construct as the root of the List View.
@@ -1086,8 +1092,8 @@ ListView.List = Class.extend({
                                    _(names).pluck(1).join(', '));
                         record.set(column.id, ids);
                     });
-                // temp empty value
-                record.set(column.id, false);
+                // temporary empty display name
+                record.set(column.id + '__display', false);
             }
         }
         return column.format(record.toForm().data, {
@@ -1379,6 +1385,12 @@ ListView.Groups = Class.extend({
                     }
                 } else {
                     group_label = group.value;
+                    var grouped_on_field = self.view.fields_get[group.grouped_on];
+                    if (grouped_on_field && grouped_on_field.type === 'selection') {
+                        group_label = _.find(grouped_on_field.selection, function(selection) {
+                            return selection[0] === group.value;
+                        });
+                    }
                     if (group_label instanceof Array) {
                         group_label = group_label[1];
                     }
@@ -1390,7 +1402,7 @@ ListView.Groups = Class.extend({
                     
                 // group_label is html-clean (through format or explicit
                 // escaping if format failed), can inject straight into HTML
-                $group_column.html(_.str.sprintf(_t("%s (%d)"),
+                $group_column.html(_.str.sprintf("%s (%d)",
                     group_label, group.length));
 
                 if (group.length && group.openable) {
@@ -1459,7 +1471,7 @@ ListView.Groups = Class.extend({
 
         var fields = _.pluck(_.select(this.columns, function(x) {return x.tag == "field";}), 'name');
         var options = { offset: current_min - 1, limit: view._limit, context: {bin_size: true} };
-        return $.async_when().then(function() {
+        return utils.async_when().then(function() {
             return dataset.read_slice(fields, options).then(function (records) {
                 // FIXME: ignominious hacks, parents (aka form view) should not send two ListView#reload_content concurrently
                 if (self.records.length) {
@@ -1525,7 +1537,7 @@ ListView.Groups = Class.extend({
                     seq = to ? list.records.at(to - 1).get(seqname) : 0;
                 var defs = [];
                 var fct = function (dataset, id, seq) {
-                    defs.push($.async_when().then(function () {
+                    defs.push(utils.async_when().then(function () {
                         var attrs = {};
                         attrs[seqname] = seq;
                         return dataset.write(id, attrs, {internal_dataset_changed: true});
@@ -1998,7 +2010,7 @@ var ColumnToggleButton = Column.extend({
         var fieldname = this.field_name;
         var has_value = row_data[fieldname] && !!row_data[fieldname].value;
         this.icon = has_value ? 'fa-circle o_toggle_button_success' : 'fa-circle text-muted';
-        this.string = has_value ? _t(button_tips ? button_tips['active']: ''): _t(button_tips ? button_tips['inactive']: '');
+        this.string = has_value ? (button_tips ? button_tips['active']: ''): (button_tips ? button_tips['inactive']: '');
         return QWeb.render('toggle_button', {
             widget: this,
             prefix: session.prefix,
@@ -2047,5 +2059,3 @@ function for_ (id, field, node) {
 
 return ListView;
 });
-
-

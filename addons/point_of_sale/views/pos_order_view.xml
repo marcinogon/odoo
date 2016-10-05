@@ -4,13 +4,13 @@
         <field name="name">pos.order.form</field>
         <field name="model">pos.order</field>
         <field name="arch" type="xml">
-            <form string="Point of Sale Orders">
+            <form string="Point of Sale Orders" create="0">
                 <header>
                     <button name="%(action_pos_payment)d" string="Payment" class="oe_highlight" type="action" states="draft" context="{'pos_session_id' : session_id}"/>
-                    <button name="action_invoice" string="Invoice" type="object" states="paid" attrs="{'readonly': [('partner_id','=',False)]}"/>
+                    <button name="action_pos_order_invoice" string="Invoice" type="object" states="paid" attrs="{'readonly': [('partner_id','=',False)]}"/>
                     <button name="refund" string="Return Products" type="object"
                         attrs="{'invisible':[('state','=','draft')]}"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,paid,done" statusbar_colors='{"cancel":"red"}'/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,paid,done" />
                 </header>
                 <sheet>
                 <div class="oe_button_box" name="button_box">
@@ -50,7 +50,8 @@
                                     <field name="price_unit" widget="monetary"/>
                                     <field name="price_subtotal" invisible="1" widget="monetary"/>
                                     <field name="price_subtotal_incl" invisible="1" widget="monetary"/>
-                                    <field name="tax_ids" widget="many2many_tags"/>
+                                    <field name="tax_ids_after_fiscal_position" widget="many2many_tags"/>
+                                    <field name="tax_ids" invisible="1"/>
                                     <field name="notice"/>
                                 </group>
                             </form>
@@ -122,7 +123,7 @@
         <field name="name">pos.order.tree</field>
         <field name="model">pos.order</field>
         <field name="arch" type="xml">
-            <tree string="POS Orders" decoration-info="state == 'draft'" decoration-muted="state in ('done','cancel')">
+            <tree string="POS Orders" decoration-info="state == 'draft'" decoration-muted="state in ('done','cancel')" create="0">
                 <field name="name"/>
                 <field name="pos_reference"/>
                 <field name="partner_id"/>

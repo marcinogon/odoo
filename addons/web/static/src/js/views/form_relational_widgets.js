@@ -142,7 +142,7 @@ var FieldMany2One = common.AbstractField.extend(common.CompletionFieldMixin, com
             }
             var context = self.build_context().eval();
             var model_obj = new Model(self.field.relation);
-            model_obj.call('get_formview_id', [self.get("value"), context]).then(function(view_id){
+            model_obj.call('get_formview_id', [[self.get("value")], context]).then(function(view_id){
                 var pop = new common.FormViewDialog(self, {
                     res_model: self.field.relation,
                     res_id: self.get("value"),
@@ -320,7 +320,8 @@ var FieldMany2One = common.AbstractField.extend(common.CompletionFieldMixin, com
             var dataset = new data.DataSetStatic(this, this.field.relation, self.build_context());
             var def = this.alive(dataset.name_get([self.get("value")])).done(function(data) {
                 if (!data[0]) {
-                    self.do_warn(_t("Render"), _t("No value found for the field "+self.field.string+" for value "+self.get("value")));
+                    self.do_warn(_t("Render"),
+                        _.str.sprintf(_t("No value found for the field %s for value %s"), self.field.string, self.get("value")));
                     return;
                 }
                 self.display_value["" + self.get("value")] = data[0][1];
@@ -361,7 +362,7 @@ var FieldMany2One = common.AbstractField.extend(common.CompletionFieldMixin, com
     execute_formview_action: function() {
         var self = this;
         var context = self.build_context().eval();
-        (new Model(self.field.relation)).call('get_formview_action', [self.get("value"), context]).then(function(action) {
+        (new Model(self.field.relation)).call('get_formview_action', [[self.get("value")], context]).then(function(action) {
             self.do_action(action);
         });
     },
@@ -802,13 +803,13 @@ var FieldX2Many = AbstractManyField.extend({
         this.viewmanager.on("switch_mode", self, function(n_mode) {
             $.when(self.commit_value()).done(function() {
                 if (n_mode === "list") {
-                    $.async_when().done(function() {
+                    utils.async_when().done(function() {
                         self.reload_current_view();
                     });
                 }
             });
         });
-        $.async_when().done(function () {
+        utils.async_when().done(function () {
             self.$el.addClass('o_view_manager_content');
             self.alive(self.viewmanager.attachTo(self.$el));
         });
@@ -819,6 +820,7 @@ var FieldX2Many = AbstractManyField.extend({
         self.is_loaded = self.is_loaded.then(function() {
             var view = self.get_active_view();
             if (view.type === "list") {
+                view.controller.current_min = 1;
                 return view.controller.reload_content();
             } else if (view.controller.do_search) {
                 return view.controller.do_search(self.build_domain(), self.dataset.get_context(), []);
@@ -864,7 +866,7 @@ var FieldX2Many = AbstractManyField.extend({
         return true;
     },
     is_false: function() {
-        return false;
+        return _(this.dataset.ids).isEmpty();
     },
 });
 
@@ -953,7 +955,7 @@ var X2ManyListView = ListView.extend({
             field.no_rerender = true;
             current_values[field.name] = field.get('value');
         });
-        var cached_records = _.filter(this.dataset.cache, function(item){return !_.isEmpty(item.values);});
+        var cached_records = _.filter(this.dataset.cache, function(item){return !_.isEmpty(item.values) && !item.to_delete;});
         var valid = _.every(cached_records, function(record){
             _.each(fields, function(field){
                 var value = record.values[field.name];
@@ -1262,13 +1264,16 @@ var FieldOne2Many = FieldX2Many.extend({
         return this._super.apply(this, arguments);
     },
     commit_value: function() {
-        var view = this.viewmanager.active_view;
-        if(view.type === "list" && view.controller.editable()) {
-            return this.mutex.def.then(function () {
-                return view.controller.save_edition();
-            });
-        }
-        return this.mutex.def;
+        var self = this;
+        return this.is_loaded.then(function() {
+            var view = self.viewmanager.active_view;
+            if(view.type === "list" && view.controller.editable()) {
+                return self.mutex.def.then(function () {
+                    return view.controller.save_edition();
+                });
+            }
+            return self.mutex.def;
+        });
     },
 });
 

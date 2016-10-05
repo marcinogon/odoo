@@ -3,11 +3,11 @@
 import time
 import math
 
-from openerp.osv import expression
-from openerp.tools.float_utils import float_round as round
-from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
-from openerp.exceptions import UserError, ValidationError
-from openerp import api, fields, models, _
+from odoo.osv import expression
+from odoo.tools.float_utils import float_round as round
+from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
+from odoo.exceptions import UserError, ValidationError
+from odoo import api, fields, models, _
 
 
 class AccountAccountType(models.Model):
@@ -46,48 +46,6 @@ class AccountAccount(models.Model):
     _description = "Account"
     _order = "code"
 
-    #@api.multi
-    #def _compute_has_unreconciled_entries(self):
-    #    print "ici dedans"
-    #    account_ids = self.ids
-    #    for account in self:
-    #        # Avoid useless work if has_unreconciled_entries is not relevant for this account
-    #        if account.deprecated or not account.reconcile:
-    #            account.has_unreconciled_entries = False
-    #            account_ids = account_ids - account
-    #    if account_ids:
-    #        res = dict.fromkeys([x.id for x in account_ids], False)
-    #        self.env.cr.execute(
-    #            """ SELECT s.account_id FROM(
-    #                    SELECT
-    #                        a.id as account_id, a.last_time_entries_checked AS last_time_entries_checked,
-    #                        MAX(l.write_date) AS max_date
-    #                    FROM
-    #                        account_move_line l
-    #                        RIGHT JOIN account_account a ON (a.id = l.account_id)
-    #                    WHERE
-    #                        a.id in %s
-    #                        AND EXISTS (
-    #                            SELECT 1
-    #                            FROM account_move_line l
-    #                            WHERE l.account_id = a.id
-    #                            AND l.amount_residual > 0
-    #                        )
-    #                        AND EXISTS (
-    #                            SELECT 1
-    #                            FROM account_move_line l
-    #                            WHERE l.account_id = a.id
-    #                            AND l.amount_residual < 0
-    #                        )
-    #                    GROUP BY a.id, a.last_time_entries_checked
-    #                ) as s
-    #                WHERE (last_time_entries_checked IS NULL OR max_date > last_time_entries_checked)
-    #            """ % (account_ids,))
-    #        res.update(self.env.cr.dictfetchall())
-    #        for account in self.browse(res.keys()):
-    #            if res[account.id]:
-    #                account.has_unreconciled_entries = True
-
     @api.multi
     @api.constrains('internal_type', 'reconcile')
     def _check_reconcile(self):
@@ -97,7 +55,7 @@ class AccountAccount(models.Model):
 
     name = fields.Char(required=True, index=True)
     currency_id = fields.Many2one('res.currency', string='Account Currency',
-        help="Forces all moves for this account to have this account currency.")
+        help="Forces all moves for this account to have this secondary currency.")
     code = fields.Char(size=64, required=True, index=True)
     deprecated = fields.Boolean(index=True, default=False)
     user_type_id = fields.Many2one('account.account.type', string='Type', required=True, oldname="user_type", 
@@ -122,13 +80,30 @@ class AccountAccount(models.Model):
     ]
 
     @api.model
+    def default_get(self, default_fields):
+        """If we're creating a new account through a many2one, there are chances that we typed the account code
+        instead of its name. In that case, switch both fields values.
+        """
+        default_name = self._context.get('default_name')
+        default_code = self._context.get('default_code')
+        if default_name and not default_code:
+            try:
+                default_code = int(default_name)
+            except ValueError:
+                pass
+            if default_code:
+                default_name = False
+        contextual_self = self.with_context(default_name=default_name, default_code=default_code)
+        return super(AccountAccount, contextual_self).default_get(default_fields)
+
+    @api.model
     def name_search(self, name, args=None, operator='ilike', limit=100):
         args = args or []
         domain = []
         if name:
             domain = ['|', ('code', '=ilike', name + '%'), ('name', operator, name)]
             if operator in expression.NEGATIVE_TERM_OPERATORS:
-                domain = ['&'] + domain
+                domain = ['&', '!'] + domain[1:]
         accounts = self.search(domain + args, limit=limit)
         return accounts.name_get()
 
@@ -147,6 +122,7 @@ class AccountAccount(models.Model):
         return result
 
     @api.one
+    @api.returns('self', lambda value: value.id)
     def copy(self, default=None):
         default = dict(default or {})
         default.update(code=_("%s (copy)") % (self.code or ''))
@@ -179,8 +155,14 @@ class AccountAccount(models.Model):
 
     @api.multi
     def action_open_reconcile(self):
+        self.ensure_one()
         # Open reconciliation view for this account
-        action_context = {'show_mode_selector': False, 'account_ids': [self.id,]}
+        if self.internal_type == 'payable':
+            action_context = {'show_mode_selector': False, 'mode': 'suppliers'}
+        elif self.internal_type == 'receivable':
+            action_context = {'show_mode_selector': False, 'mode': 'customers'}
+        else:
+            action_context = {'show_mode_selector': False, 'account_ids': [self.id,]}
         return {
             'type': 'ir.actions.client',
             'tag': 'manual_reconciliation_view',
@@ -231,7 +213,7 @@ class AccountJournal(models.Model):
 
     #groups_id = fields.Many2many('res.groups', 'account_journal_group_rel', 'journal_id', 'group_id', string='Groups')
     currency_id = fields.Many2one('res.currency', help='The currency used to enter statement', string="Currency", oldname='currency')
-    company_id = fields.Many2one('res.company', string='Company', required=True, index=1, default=lambda self: self.env.user.company_id,
+    company_id = fields.Many2one('res.company', string='Company', required=True, index=True, default=lambda self: self.env.user.company_id,
         help="Company related to this journal")
 
     refund_sequence = fields.Boolean(string='Dedicated Refund Sequence', help="Check this box if you don't want to share the same sequence for invoices and refunds made from this journal", default=False)
@@ -304,6 +286,7 @@ class AccountJournal(models.Model):
         return ret
 
     @api.one
+    @api.returns('self', lambda value: value.id)
     def copy(self, default=None):
         default = dict(default or {})
         default.update(
@@ -573,6 +556,7 @@ class AccountTax(models.Model):
             raise ValidationError(_('The application scope of taxes in a group must be either the same as the group or "None".'))
 
     @api.one
+    @api.returns('self', lambda value: value.id)
     def copy(self, default=None):
         default = dict(default or {}, name=_("%s (Copy)") % self.name)
         return super(AccountTax, self).copy(default=default)
@@ -621,13 +605,29 @@ class AccountTax(models.Model):
         if self.price_include:
             self.include_base_amount = True
 
+    def get_grouping_key(self, invoice_tax_val):
+        """ Returns a string that will be used to group account.invoice.tax sharing the same properties"""
+        self.ensure_one()
+        return str(invoice_tax_val['tax_id']) + '-' + str(invoice_tax_val['account_id']) + '-' + str(invoice_tax_val['account_analytic_id'])
+
     def _compute_amount(self, base_amount, price_unit, quantity=1.0, product=None, partner=None):
         """ Returns the amount of a single tax. base_amount is the actual amount on which the tax is applied, which is
             price_unit * quantity eventually affected by previous taxes (if tax is include_base_amount XOR price_include)
         """
         self.ensure_one()
         if self.amount_type == 'fixed':
-            return math.copysign(self.amount, base_amount) * quantity
+            # Use copysign to take into account the sign of the base amount which includes the sign
+            # of the quantity and the sign of the price_unit
+            # Amount is the fixed price for the tax, it can be negative
+            # Base amount included the sign of the quantity and the sign of the unit price and when
+            # a product is returned, it can be done either by changing the sign of quantity or by changing the
+            # sign of the price unit.
+            # When the price unit is equal to 0, the sign of the quantity is absorbed in base_amount then
+            # a "else" case is needed.
+            if base_amount:
+                return math.copysign(quantity, base_amount) * self.amount
+            else:
+                return quantity * self.amount
         if (self.amount_type == 'percent' and not self.price_include) or (self.amount_type == 'division' and self.price_include):
             return base_amount * self.amount / 100
         if self.amount_type == 'percent' and self.price_include:
@@ -635,7 +635,18 @@ class AccountTax(models.Model):
         if self.amount_type == 'division' and not self.price_include:
             return base_amount / (1 - self.amount / 100) - base_amount
 
-    @api.v8
+    @api.multi
+    def json_friendly_compute_all(self, price_unit, currency_id=None, quantity=1.0, product_id=None, partner_id=None):
+        """ Just converts parameters in browse records and calls for compute_all, because js widgets can't serialize browse records """
+        if currency_id:
+            currency_id = self.env['res.currency'].browse(currency_id)
+        if product_id:
+            product_id = self.env['product.product'].browse(product_id)
+        if partner_id:
+            partner_id = self.env['res.partner'].browse(partner_id)
+        return self.compute_all(price_unit, currency=currency_id, quantity=quantity, product=product_id, partner=partner_id)
+
+    @api.multi
     def compute_all(self, price_unit, currency=None, quantity=1.0, product=None, partner=None):
         """ Returns all information required to apply taxes (in self + their children in case of a tax goup).
             We consider the sequence of the parent for group of taxes.
@@ -672,7 +683,18 @@ class AccountTax(models.Model):
         # the 'Account' decimal precision + 5), and that way it's like
         # rounding after the sum of the tax amounts of each line
         prec = currency.decimal_places
-        if company_id.tax_calculation_rounding_method == 'round_globally' or not bool(self.env.context.get("round", True)):
+
+        # In some cases, it is necessary to force/prevent the rounding of the tax and the total
+        # amounts. For example, in SO/PO line, we don't want to round the price unit at the
+        # precision of the currency.
+        # The context key 'round' allows to force the standard behavior.
+        round_tax = False if company_id.tax_calculation_rounding_method == 'round_globally' else True
+        round_total = True
+        if 'round' in self.env.context:
+            round_tax = bool(self.env.context['round'])
+            round_total = bool(self.env.context['round'])
+
+        if not round_tax:
             prec += 5
         total_excluded = total_included = base = round(price_unit * quantity, prec)
 
@@ -691,7 +713,7 @@ class AccountTax(models.Model):
                 continue
 
             tax_amount = tax._compute_amount(base, price_unit, quantity, product, partner)
-            if company_id.tax_calculation_rounding_method == 'round_globally' or not bool(self.env.context.get("round", True)):
+            if not round_tax:
                 tax_amount = round(tax_amount, prec)
             else:
                 tax_amount = currency.round(tax_amount)
@@ -717,19 +739,10 @@ class AccountTax(models.Model):
 
         return {
             'taxes': sorted(taxes, key=lambda k: k['sequence']),
-            'total_excluded': currency.round(total_excluded) if bool(self.env.context.get("round", True)) else total_excluded,
-            'total_included': currency.round(total_included) if bool(self.env.context.get("round", True)) else total_included,
+            'total_excluded': currency.round(total_excluded) if round_total else total_excluded,
+            'total_included': currency.round(total_included) if round_total else total_included,
             'base': base,
         }
-
-    @api.v7
-    def compute_all(self, cr, uid, ids, price_unit, currency_id=None, quantity=1.0, product_id=None, partner_id=None, context=None):
-        currency = currency_id and self.pool.get('res.currency').browse(cr, uid, currency_id, context=context) or None
-        product = product_id and self.pool.get('product.product').browse(cr, uid, product_id, context=context) or None
-        partner = partner_id and self.pool.get('res.partner').browse(cr, uid, partner_id, context=context) or None
-        ids = isinstance(ids, (int, long)) and [ids] or ids
-        recs = self.browse(cr, uid, ids, context=context)
-        return AccountTax.compute_all(recs, price_unit, currency, quantity, product, partner)
 
     @api.model
     def _fix_tax_included_price(self, price, prod_taxes, line_taxes):
@@ -740,8 +753,8 @@ class AccountTax(models.Model):
             return incl_tax.compute_all(price)['total_excluded']
         return price
 
-class AccountOperationTemplate(models.Model):
-    _name = "account.operation.template"
+class AccountReconcileModel(models.Model):
+    _name = "account.reconcile.model"
     _description = "Preset to create journal entries during a invoices and payments matching"
 
     name = fields.Char(string='Button Label', required=True)

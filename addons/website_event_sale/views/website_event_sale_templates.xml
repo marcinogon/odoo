@@ -19,6 +19,10 @@
 </template>
 
 <template id="registration_template" inherit_id="website_event.registration_template">
+    <xpath expr="//thead/tr/th[contains(@class, 'o_th_price')]" position="after">
+        <t t-set='show_tickets_left' t-value="any([ticket for ticket in event.event_ticket_ids if (ticket.seats_max and ((ticket.seats_reserved or 0)*100 / ticket.seats_max)&gt;75)])"/>
+        <th t-if="show_tickets_left"></th>
+    </xpath>
     <xpath expr="//tbody" position="replace">
         <tbody>
             <t t-foreach="event.event_ticket_ids" t-as="ticket">
@@ -36,18 +40,18 @@
                         </t>
                     </td>
                     <td>
-                            <t t-if="ticket.price or editable">
-                              <t t-if="(ticket.price-ticket.price_reduce) &gt; 1">
-                                <del class="text-danger mr4" style="white-space: nowrap;" t-field="ticket.price" t-field-options='{
-                                  "widget": "monetary",
-                                  "from_currency": website.currency_id,
-                                  "display_currency": user_id.partner_id.property_product_pricelist.currency_id
-                                }'/>
-                              </t>
-                              <span t-field="ticket.price_reduce" t-field-options='{
-                               "widget": "monetary",
-                               "display_currency": website.pricelist_id.currency_id
-                          }'/>
+                        <t t-if="ticket.price or editable">
+                            <t t-if="(ticket.price-website.get_current_pricelist().currency_id.compute(ticket.price_reduce, event.company_id.sudo().currency_id)) &gt; 1">
+                            <del class="text-danger mr4" style="white-space: nowrap;" t-field="ticket.price" t-options='{
+                              "widget": "monetary",
+                              "from_currency": event.company_id.sudo().currency_id,
+                              "display_currency": website.get_current_pricelist().currency_id
+                            }'/>
+                            </t>
+                            <span t-field="ticket.price_reduce" t-options='{
+                             "widget": "monetary",
+                             "display_currency": website.pricelist_id.currency_id
+                            }'/>
                             <span itemprop="price" style="display:none;" t-esc="ticket.price"/>
                             <span itemprop="priceCurrency" style="display:none;" t-esc="website.pricelist_id.currency_id.name"/>
                         </t>
@@ -55,7 +59,7 @@
                             <span>Free</span>
                         </t>
                     </td>
-                    <td>
+                    <td t-if="show_tickets_left">
                         <span t-if="ticket.seats_max and ((ticket.seats_reserved or 0)*100 / ticket.seats_max)&gt;75" class="text-muted">
                             <t t-esc="ticket.seats_max - ticket.seats_reserved"/> <span>left</span>
                         </span>

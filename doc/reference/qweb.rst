@@ -95,6 +95,16 @@ not have to be ``<t>``::
 
 will give the same results as the previous example.
 
+Extra conditional branching directives ``t-elif`` and ``t-else`` are also
+available::
+
+    <div>
+        <p t-if="user.birthday == today()">Happy bithday!</p>
+        <p t-elif="user.login == 'root'">Welcome master!</p>
+        <p t-else="">Welcome!</p>
+    </div>
+
+
 .. _reference/qweb/loops:
 
 loops
@@ -334,7 +344,7 @@ The ``t-field`` directive can only be used when performing field access
 to automatically format based on field type, and is integrated in the
 website's rich text edition.
 
-``t-field-options`` can be used to customize fields, the most common option
+``t-options`` can be used to customize fields, the most common option
 is ``widget``, other options are field- or widget-dependent.
 
 debugging

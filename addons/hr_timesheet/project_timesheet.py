@@ -1,22 +1,19 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from openerp import models, fields, api
-from openerp.osv import osv
+from odoo import models, fields, api
 
 
 class Project(models.Model):
     _inherit = "project.project"
 
-    subtask_project_id = fields.Many2one('project.project', string='Sub-task Project', help="Choosing a sub-tasks project will both enable sub-tasks and set their default project (possibly the project itself)",
-            ondelete="restrict")
-
+    subtask_project_id = fields.Many2one(
+        'project.project', string='Sub-task Project', ondelete="restrict",
+        help="Choosing a sub-tasks project will both enable sub-tasks and set their default project (possibly the project itself)")
+    allow_timesheets = fields.Boolean("Allow timesheets", default=True)
 
 class Task(models.Model):
     _inherit = "project.task"
-
-    def _get_total_hours(self):
-        return super(Task, self)._get_total_hours() + self.effective_hours
 
     @api.multi
     def _get_subtask_count(self):
@@ -51,14 +48,14 @@ class Task(models.Model):
     effective_hours = fields.Float(compute='_hours_get', store=True, string='Hours Spent', help="Computed using the sum of the task work done.")
     total_hours = fields.Float(compute='_hours_get', store=True, string='Total', help="Computed as: Time Spent + Remaining Time.")
     total_hours_spent = fields.Float(compute='_hours_get', store=True, string='Total Hours', help="Computed as: Time Spent + Sub-tasks Hours.")
-    progress = fields.Float(compute='_hours_get', store=True, string='Working Time Recorded', group_operator="avg", default=0.0)
+    progress = fields.Float(compute='_hours_get', store=True, string='Working Time Recorded', group_operator="avg")
     delay_hours = fields.Float(compute='_hours_get', store=True, string='Delay Hours', help="Computed as difference between planned hours by the project manager and the total hours of the task.")
     children_hours = fields.Float(compute='_hours_get', store=True, string='Sub-tasks Hours', help="Sum of the planned hours of all sub-tasks (when a sub-task is closed or its spent hours exceed its planned hours, spent hours are counted instead)")
     timesheet_ids = fields.One2many('account.analytic.line', 'task_id', 'Timesheets')
 
     parent_id = fields.Many2one('project.task', string='Parent Task')
     child_ids = fields.One2many('project.task', 'parent_id', string="Sub-tasks")
-    subtask_project_id = fields.Many2one('project.project', related="project_id.subtask_project_id", string='Sub-task Project')
+    subtask_project_id = fields.Many2one('project.project', related="project_id.subtask_project_id", string='Sub-task Project', readonly=True)
     subtask_count = fields.Integer(compute='_get_subtask_count', type='integer', string="Sub-task count")
 
-    _constraints = [(osv.osv._check_recursion, 'Circular references are not permitted between tasks and sub-tasks', ['parent_id'])]
+    _constraints = [(models.BaseModel._check_recursion, 'Circular references are not permitted between tasks and sub-tasks', ['parent_id'])]

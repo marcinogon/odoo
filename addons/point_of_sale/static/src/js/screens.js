@@ -297,6 +297,15 @@ var ScaleScreenWidget = ScreenWidget.extend({
         var product = this.get_product();
         return (product ? product.price : 0) || 0;
     },
+    get_product_uom: function(){
+        var product = this.get_product();
+
+        if(product){
+            return this.pos.units_by_id[product.uom_id[0]].name;
+        }else{
+            return '';
+        }
+    },
     set_weight: function(weight){
         this.weight = weight;
         this.$('.weight').text(this.get_product_weight_string());
@@ -315,7 +324,7 @@ var ScaleScreenWidget = ScreenWidget.extend({
         var unit = this.pos.units_by_id[unit_id[0]];
         var weight = round_pr(this.weight || 0, unit.rounding);
         var weightstr = weight.toFixed(Math.ceil(Math.log(1.0/unit.rounding) / Math.log(10) ));
-            weightstr += ' Kg';
+        weightstr += ' ' + unit.name;
         return weightstr;
     },
     get_computed_price_string: function(){
@@ -1182,7 +1191,7 @@ var ClientListScreenWidget = ScreenWidget.extend({
         
         var fields = {};
         this.$('.client-details-contents .detail').each(function(idx,el){
-            fields[el.name] = el.value;
+            fields[el.name] = el.value || false;
         });
 
         if (!fields.name) {
@@ -1196,7 +1205,6 @@ var ClientListScreenWidget = ScreenWidget.extend({
 
         fields.id           = partner.id || false;
         fields.country_id   = fields.country_id || false;
-        fields.barcode      = fields.barcode || '';
 
         new Model('res.partner').call('create_from_ui',[fields]).then(function(partner_id){
             self.saved_client_details(partner_id);

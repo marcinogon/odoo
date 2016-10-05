@@ -2,7 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models
-from odoo.tools.translate import _
+from odoo.tools.translate import _, html_translate
 from odoo.addons.website.models.website import slug
 
 
@@ -49,9 +49,9 @@ class Track(models.Model):
     state = fields.Selection([
         ('draft', 'Proposal'), ('confirmed', 'Confirmed'), ('announced', 'Announced'), ('published', 'Published'), ('refused', 'Refused'), ('cancel', 'Cancelled')],
         'Status', default='draft', required=True, copy=False, track_visibility='onchange')
-    description = fields.Html('Track Description', translate=True)
+    description = fields.Html('Track Description', translate=html_translate, sanitize_attributes=False)
     date = fields.Datetime('Track Date')
-    duration = fields.Float('Duration', digits=(16, 2), default=1.5)
+    duration = fields.Float('Duration', default=1.5)
     location_id = fields.Many2one('event.track.location', 'Room')
     event_id = fields.Many2one('event.event', 'Event', required=True)
     color = fields.Integer('Color Index')
@@ -82,10 +82,10 @@ class Track(models.Model):
 
     @api.multi
     @api.depends('name')
-    def _website_url(self, field_name, arg):
-        res = super(Track, self)._website_url(field_name, arg)
-        res.update({(track.id, '/event/%s/track/%s' % (slug(track.event_id), slug(track))) for track in self})
-        return res
+    def _compute_website_url(self):
+        super(Track, self)._compute_website_url()
+        for track in self:
+            track.website_url = '/event/%s/track/%s' % (slug(track.event_id), slug(track))
 
     @api.model
     def read_group(self, domain, fields, groupby, offset=0, limit=None, orderby=False, lazy=True):

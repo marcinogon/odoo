@@ -3,17 +3,18 @@
 # * board
 # 
 # Translators:
-# fausthuang, 2015
-# fausthuang, 2015
-# Martin Trigaux, 2016
+# Jeffery Chenn <jeffery9@gmail.com>, 2016
+# liAnGjiA <liangjia@qq.com>, 2016
+# Martin Trigaux <mat@odoo.com>, 2016
+# Wei "oldrev" Li <liwei@sandwych.com>, 2016
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo 9.0\n"
+"Project-Id-Version: Odoo Server 9.saas~10c\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-07 14:40+0000\n"
-"PO-Revision-Date: 2016-03-12 01:56+0000\n"
-"Last-Translator: Joroy <13637815@qq.com>\n"
-"Language-Team: Chinese (China) (http://www.transifex.com/odoo/odoo-9/language/zh_CN/)\n"
+"POT-Creation-Date: 2016-08-18 14:07+0000\n"
+"PO-Revision-Date: 2016-08-18 14:07+0000\n"
+"Last-Translator: Wei \"oldrev\" Li <liwei@sandwych.com>, 2016\n"
+"Language-Team: Chinese (China) (https://www.transifex.com/odoo/teams/41243/zh_CN/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
@@ -29,7 +30,7 @@ msgstr "&nbsp;"
 
 #. module: board
 #. openerp-web
-#: code:addons/board/static/src/js/dashboard.js:406
+#: code:addons/board/static/src/js/dashboard.js:407
 #, python-format
 msgid "'%s' added to dashboard"
 msgstr "'%s' 添加到仪表板"
@@ -103,10 +104,10 @@ msgstr "选择仪表板布局"
 
 #. module: board
 #. openerp-web
-#: code:addons/board/static/src/js/dashboard.js:408
+#: code:addons/board/static/src/js/dashboard.js:409
 #, python-format
 msgid "Could not add filter to dashboard"
-msgstr "无法增加过滤器到仪表板"
+msgstr "无法增加筛选到仪表板"
 
 #. module: board
 #: model:ir.ui.view,arch_db:board.view_board_create
@@ -127,7 +128,7 @@ msgstr "创建新的仪表板"
 #. module: board
 #: model:ir.model.fields,field_description:board.field_board_create_create_uid
 msgid "Created by"
-msgstr "创建者"
+msgstr "创建人"
 
 #. module: board
 #: model:ir.model.fields,field_description:board.field_board_create_create_date
@@ -187,11 +188,16 @@ msgid ""
 "To add your first report into this dashboard, go to any\n"
 "                    menu, switch to list or graph view, and click <i>'Add to\n"
 "                    Dashboard'</i> in the extended search options."
-msgstr "要添加第一个报表到这个仪表板，去任意\n菜单，切换到列表或图表视图，然后单击<I>“添加到\n仪表板“</I>在扩展的搜索选项。"
+msgstr ""
+"要添加第一个报表到这个仪表板，去任意\n"
+"菜单，切换到列表或图表视图，然后单击<I>“添加到\n"
+"仪表板“</I>在扩展的搜索选项。"
 
 #. module: board
 #: model:ir.actions.act_window,help:board.open_board_my_dash_action
 msgid ""
 "You can filter and group data before inserting into the\n"
 "                    dashboard using the search options."
-msgstr "您可以使用搜索选项过滤或分组数据在添加到\n仪表板之前。"
+msgstr ""
+"您可以使用搜索选项过滤或分组数据在添加到\n"
+"仪表板之前。"

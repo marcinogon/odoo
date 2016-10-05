@@ -3,16 +3,24 @@
 # * board
 # 
 # Translators:
-# Albert Cabedo GAFIC <albertgafic@gmail.com>, 2015
-# Pedro M. Baeza <pedro.baeza@gmail.com>, 2015
+# Pedro M. Baeza <pedro.baeza@gmail.com>, 2016
+# Martin Trigaux <mat@odoo.com>, 2016
+# Antonio Trueba <atgayol@gmail.com>, 2016
+# Oihane Crucelaegui <oihanecruce@gmail.com>, 2016
+# Albert Cabedo GAFIC <albertgafic@gmail.com>, 2016
+# Carles Antoli <carlesantoli@hotmail.com>, 2016
+# Mateo Tibaquirá Palacios <nestormateo@gmail.com>, 2016
+# Ana Juaristi <ajuaristio@gmail.com>, 2016
+# Leonardo Chianea <noamixcontenidos@gmail.com>, 2016
+# Ivan Nieto <ivan.n.s@tuta.io>, 2016
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo 9.0\n"
+"Project-Id-Version: Odoo Server 9.saas~10c\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-07 14:40+0000\n"
-"PO-Revision-Date: 2015-10-04 01:20+0000\n"
-"Last-Translator: Pedro M. Baeza <pedro.baeza@gmail.com>\n"
-"Language-Team: Spanish (http://www.transifex.com/odoo/odoo-9/language/es/)\n"
+"POT-Creation-Date: 2016-08-18 14:07+0000\n"
+"PO-Revision-Date: 2016-08-18 14:07+0000\n"
+"Last-Translator: Ivan Nieto <ivan.n.s@tuta.io>, 2016\n"
+"Language-Team: Spanish (https://www.transifex.com/odoo/teams/41243/es/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
@@ -28,7 +36,7 @@ msgstr "&nbsp;"
 
 #. module: board
 #. openerp-web
-#: code:addons/board/static/src/js/dashboard.js:406
+#: code:addons/board/static/src/js/dashboard.js:407
 #, python-format
 msgid "'%s' added to dashboard"
 msgstr "'%s' añadido al tablero"
@@ -43,7 +51,7 @@ msgstr "<b>Su tablero personal está vacío.</b>"
 #: code:addons/board/static/src/xml/board.xml:70
 #, python-format
 msgid "Add"
-msgstr "Agregar"
+msgstr "Añadir"
 
 #. module: board
 #. openerp-web
@@ -102,7 +110,7 @@ msgstr "Elija Diseño Tablero"
 
 #. module: board
 #. openerp-web
-#: code:addons/board/static/src/js/dashboard.js:408
+#: code:addons/board/static/src/js/dashboard.js:409
 #, python-format
 msgid "Could not add filter to dashboard"
 msgstr "No se puede añadir un filtro al tablero"
@@ -131,13 +139,13 @@ msgstr "Creado por"
 #. module: board
 #: model:ir.model.fields,field_description:board.field_board_create_create_date
 msgid "Created on"
-msgstr "Creado en"
+msgstr "Creado el"
 
 #. module: board
 #: model:ir.model.fields,field_description:board.field_board_board_display_name
 #: model:ir.model.fields,field_description:board.field_board_create_display_name
 msgid "Display Name"
-msgstr "Nombre mostrado"
+msgstr "Nombre a mostrar"
 
 #. module: board
 #. openerp-web
@@ -150,7 +158,7 @@ msgstr "Editar Diseño"
 #: model:ir.model.fields,field_description:board.field_board_board_id
 #: model:ir.model.fields,field_description:board.field_board_create_id
 msgid "ID"
-msgstr "ID (identificación)"
+msgstr "ID"
 
 #. module: board
 #: model:ir.model.fields,field_description:board.field_board_board___last_update
@@ -161,12 +169,12 @@ msgstr "Última modificación en"
 #. module: board
 #: model:ir.model.fields,field_description:board.field_board_create_write_uid
 msgid "Last Updated by"
-msgstr "Última actualización de"
+msgstr "Última actualización por"
 
 #. module: board
 #: model:ir.model.fields,field_description:board.field_board_create_write_date
 msgid "Last Updated on"
-msgstr "Última actualización en"
+msgstr "Última actualización el"
 
 #. module: board
 #: model:ir.actions.act_window,name:board.open_board_my_dash_action
@@ -186,11 +194,16 @@ msgid ""
 "To add your first report into this dashboard, go to any\n"
 "                    menu, switch to list or graph view, and click <i>'Add to\n"
 "                    Dashboard'</i> in the extended search options."
-msgstr "Para añadir su primer informe en este tablero, vaya a cualquier menú, cambie a la vista listado o gráfico, y pulse <i>Añadir al tablero</i> en las opciones de búsqueda avanzada."
+msgstr ""
+"Para añadir su primer informe en este tablero, vaya a cualquier menú, cambie"
+" a la vista listado o gráfico, y pulse <i>Añadir al tablero</i> en las "
+"opciones de búsqueda avanzada."
 
 #. module: board
 #: model:ir.actions.act_window,help:board.open_board_my_dash_action
 msgid ""
 "You can filter and group data before inserting into the\n"
 "                    dashboard using the search options."
-msgstr "Puede filtrar y agrupar los datos usando las opciones de búsqueda antes de insertar la vista en el tablero."
+msgstr ""
+"Puede filtrar y agrupar los datos usando las opciones de búsqueda antes de "
+"insertar la vista en el tablero."

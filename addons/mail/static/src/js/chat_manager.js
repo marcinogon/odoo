@@ -4,6 +4,7 @@ odoo.define('mail.chat_manager', function (require) {
 var bus = require('bus.bus').bus;
 var utils = require('mail.utils');
 var config = require('web.config');
+var Bus = require('web.Bus');
 var core = require('web.core');
 var data = require('web.data');
 var Model = require('web.Model');
@@ -13,7 +14,7 @@ var web_client = require('web.web_client');
 
 var _t = core._t;
 var _lt = core._lt;
-var LIMIT = 100;
+var LIMIT = 25;
 var preview_msg_max_size = 350;  // optimal for native english speakers
 var ODOOBOT_ID = "ODOOBOT";
 
@@ -127,10 +128,13 @@ function make_message (data) {
         subtype_description: data.subtype_description,
         is_author: data.author_id && data.author_id[0] === session.partner_id,
         is_note: data.is_note,
-        is_system_notification: data.message_type === 'notification' && data.model === 'mail.channel',
+        is_system_notification: (data.message_type === 'notification' && data.model === 'mail.channel')
+            || data.info === 'transient_message',
         attachment_ids: data.attachment_ids || [],
         subject: data.subject,
         email_from: data.email_from,
+        customer_email_status: data.customer_email_status,
+        customer_email_data: data.customer_email_data,
         record_name: data.record_name,
         tracking_value_ids: data.tracking_value_ids,
         channel_ids: data.channel_ids,
@@ -213,6 +217,22 @@ function make_message (data) {
         a.url = '/web/content/' + a.id + '?download=true';
     });
 
+    // format date to the local only once by message
+    // can not be done in preprocess, since it alter the original value
+    if (msg.tracking_value_ids && msg.tracking_value_ids.length) {
+        _.each(msg.tracking_value_ids, function(f) {
+            if (_.contains(['date', 'datetime'], f.field_type)) {
+                var format = (f.field_type === 'date') ? 'LL' : 'LLL';
+                if (f.old_value) {
+                    f.old_value = moment.utc(f.old_value).local().format(format);
+                }
+                if (f.new_value) {
+                    f.new_value = moment.utc(f.new_value).local().format(format);
+                }
+            }
+        });
+    }
+
     return msg;
 }
 
@@ -280,6 +300,9 @@ function make_channel (data, options) {
         bus.update_option('bus_presence_partner_ids', pinned_dm_partners);
     } else if ('anonymous_name' in data) {
         channel.name = data.anonymous_name;
+    }
+    if (data.last_message_date) {
+        channel.last_message_date = moment(time.str_to_datetime(data.last_message_date));
     }
     channel.is_chat = !channel.type.match(/^(public|private|static)$/);
     if (data.message_unread_counter) {
@@ -391,7 +414,7 @@ function fetch_document_messages (ids, options) {
                 processed_msgs.push(add_message(msg, {silent: true}));
             });
             return _.sortBy(loaded_msgs.concat(processed_msgs), function (msg) {
-                return msg.date;
+                return msg.id;
             });
         });
     } else {
@@ -837,7 +860,7 @@ var chat_manager = {
             return message.channel_ids.length === 0 && message.model === model;
         });
     },
-    bus: new core.Bus(),
+    bus: new Bus(),
 
     create_channel: function (name, type) {
         var method = type === "dm" ? "channel_get" : "channel_create";
@@ -914,14 +937,14 @@ var chat_manager = {
         if (res_model === "res.partner") {
             var domain = [["partner_id", "=", res_id]];
             UserModel.call("search", [domain]).then(function (user_ids) {
-                if (user_ids.length && user_ids[0] !== session.uid) {
-                    self.create_channel(res_id, 'dm').then(dm_redirection_callback || function () {});
-                } else if (!user_ids.length) {
+                if (user_ids.length && user_ids[0] !== session.uid && dm_redirection_callback) {
+                    self.create_channel(res_id, 'dm').then(dm_redirection_callback);
+                } else {
                     redirect_to_document(res_model, res_id);
                 }
             });
         } else {
-            new Model(res_model).call('get_formview_id', [res_id, session.context]).then(function (view_id) {
+            new Model(res_model).call('get_formview_id', [[res_id], session.context]).then(function (view_id) {
                 redirect_to_document(res_model, res_id, view_id);
             });
         }

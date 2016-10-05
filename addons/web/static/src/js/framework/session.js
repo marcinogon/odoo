@@ -36,7 +36,8 @@ var Session = core.Class.extend(mixins.EventDispatcherMixin, {
         this.avoid_recursion = false;
         this.use_cors = options.use_cors || false;
         this.setup(origin);
-        this.debug = ($.deparam($.param.querystring()).debug !== undefined);
+        var debug_param = $.deparam($.param.querystring()).debug;
+        this.debug = (debug_param !== undefined ? debug_param || 1 : false);
 
         // for historic reasons, the session requires a name to properly work
         // (see the methods get_cookie and set_cookie).  We should perhaps
@@ -266,15 +267,6 @@ var Session = core.Class.extend(mixins.EventDispatcherMixin, {
         options.session = this;
         ajax.get_file(options);
     },
-    synchronized_mode: function(to_execute) {
-        var synch = this.synch;
-        this.synch = true;
-        try {
-            return to_execute();
-        } finally {
-            this.synch = synch;
-        }
-    },
     /**
      * (re)loads the content of a session: db name, username, user id, session
      * context and status of the support contract
@@ -329,7 +321,7 @@ var Session = core.Class.extend(mixins.EventDispatcherMixin, {
         var shadow = options.shadow || false;
         options.headers = _.extend({}, options.headers)
         if (odoo.debug) {
-            options.headers["X-Debug-Mode"] = true;
+            options.headers["X-Debug-Mode"] = $.deparam($.param.querystring()).debug;
         }
 
         delete options.shadow;

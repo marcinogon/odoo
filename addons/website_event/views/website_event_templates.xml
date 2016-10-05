@@ -47,10 +47,8 @@
             <div class="row mt32 mb32">
                 <div class="col-md-9" id="middle_column">
                     <div class="text-center text-muted" t-if="not event_ids">
-                      <h1>No event found</h1>
-                      <t groups="base.group_website_publisher">
-                          <p groups="event.group_event_manager">Use the top menu <i>'Content'</i> to create your first event.</p>
-                      </t>
+                        <h1>No event found</h1>
+                        <p groups="event.group_event_manager">Use the top menu <i>'Content'</i> to create your first event.</p>
                     </div>
                     <ul class="media-list">
                         <li t-foreach="event_ids" t-as="event" class="media">
@@ -67,9 +65,9 @@
                                     </t>
                                 </div>
                                 <div>
-                                    <i class="fa fa-clock-o"></i> <span itemprop="startDate" t-field="event.with_context(tz=event.date_tz).date_begin" t-field-options='{"hide_seconds":"True"}'> </span> <i>to</i> <span itemprop="endDate" t-field="event.with_context(tz=event.date_tz).date_end" t-field-options='{"hide_seconds":"True"}'> </span>
+                                    <i class="fa fa-clock-o"></i> <span itemprop="startDate" t-field="event.with_context(tz=event.date_tz).date_begin" t-options='{"hide_seconds":"True"}'> </span> <i>to</i> <span itemprop="endDate" t-field="event.with_context(tz=event.date_tz).date_end" t-options='{"hide_seconds":"True"}'> </span>
                                 </div>
-                                <div itemprop="location" t-field="event.address_id" t-field-options='{
+                                <div itemprop="location" t-field="event.address_id" t-options='{
                                     "widget": "contact",
                                     "fields": ["city"]
                                     }'/>
@@ -241,7 +239,7 @@
             <h1 class="text-center">Event Location</h1>
         </section>
         <h4 class="text-center text-muted"
-            t-field="event.address_id" t-field-options='{
+            t-field="event.address_id" t-options='{
                 "widget": "contact",
                 "fields": ["address", "phone", "mobile", "fax"]
             }'/>
@@ -272,12 +270,12 @@
                 <small t-if="event.is_participating" class="label label-info">Participating</small>
             </div>
             <h4 class="text-center text-muted">
-                <i class="fa fa-clock-o"></i> <span itemprop="startDate" t-field="event.with_context(tz=event.date_tz).date_begin" t-field-options='{"hide_seconds":"True"}'/> to
-                <span itemprop="endDate" t-field="event.with_context(tz=event.date_tz).date_end" t-field-options='{"hide_seconds":"True"}'/>
+                <i class="fa fa-clock-o"></i> <span itemprop="startDate" t-field="event.with_context(tz=event.date_tz).date_begin" t-options='{"hide_seconds":"True"}'/> to
+                <span itemprop="endDate" t-field="event.with_context(tz=event.date_tz).date_end" t-options='{"hide_seconds":"True"}'/>
                 <t t-if="event.date_tz">(<span t-field="event.date_tz"/>)</t>
             </h4>
             <h4 class="text-center text-muted"
-                t-field="event.address_id" t-field-options='{
+                t-field="event.address_id" t-options='{
                 "widget": "contact",
                 "fields": ["city"]
                 }'/>
@@ -320,7 +318,7 @@
                         <t t-raw="comment.body"/>
                         <small class="pull-right muted text-right">
                             <div t-field="comment.author_id"/>
-                            <div t-field="comment.date" t-field-options='{"hide_seconds":"True"}'/>
+                            <div t-field="comment.date" t-options='{"hide_seconds":"True"}'/>
                         </small>
                     </div>
                 </li>
@@ -334,10 +332,15 @@
                     <h4>Where</h4>
                 </div>
                 <div class="panel-body">
-                    <a t-att-href="event.google_map_link()" target="_BLANK">
-                        <img t-att-src="event.google_map_img()" width="100%%"/>
-                    </a>
-                    <div itemprop="location" class="mt16 mb8" t-field="event.address_id" t-field-options='{
+                    <t t-if="event.google_map_img()">
+                        <a t-att-href="event.google_map_link()" target="_BLANK">
+                           <img t-att-src="event.google_map_img()" width="100%%"/>
+                        </a>
+                    </t>
+                    <t t-else="1">
+                        <a t-att-href="event.google_map_link()" target="_BLANK">Visualize on Google Maps</a>
+                    </t>
+                    <div itemprop="location" class="mt16 mb8" t-field="event.address_id" t-options='{
                         "widget": "contact",
                         "fields": ["address", "phone", "mobile", "fax", "email"]
                         }'/>
@@ -349,8 +352,8 @@
                     <h4>When</h4>
                 </div>
                 <div class="panel-body">
-                    <i class="fa fa-clock-o"></i> From <span t-field="event.with_context(tz=event.date_tz).date_begin" t-field-options='{"hide_seconds":"True"}'> </span><br/>
-                    <i class="fa fa-clock-o"></i> To <span t-field="event.with_context(tz=event.date_tz).date_end" t-field-options='{"hide_seconds":"True"}'> </span>
+                    <i class="fa fa-clock-o"></i> From <span t-field="event.with_context(tz=event.date_tz).date_begin" t-options='{"hide_seconds":"True"}'> </span><br/>
+                    <i class="fa fa-clock-o"></i> To <span t-field="event.with_context(tz=event.date_tz).date_end" t-options='{"hide_seconds":"True"}'> </span>
                 </div>
             </div>
 
@@ -358,7 +361,7 @@
                 <div class="panel-heading">
                     <h4>Organizer</h4>
                 </div>
-                <div class="panel-body" t-field="event.organizer_id" t-field-options='{
+                <div class="panel-body" t-field="event.organizer_id" t-options='{
                     "widget": "contact",
                     "fields": ["name", "phone", "mobile", "fax", "email"]
                     }'/>
@@ -376,12 +379,27 @@
                             Find out what people see and say about this event,
                             and join the conversation.
                         </p>
-                        <p><strong>Use this tag:
+                        <p>
+                            <strong>Use this tag:</strong>
                             <a t-att-href="'http://twitter.com/search?q=%23'+event.twitter_hashtag" target="_blank" class="label label-primary">#<span t-field="event.twitter_hashtag"/></a>
-                        </strong></p>
+                        </p>
                     </div>
                 </div>
             </div>
+
+            <t t-set="head">
+                <t t-raw='head'/>
+                <!-- Facebook and linkedin sharing data -->
+                <meta property="og:type" content="website" />
+                <meta property="og:url" t-att-content="request.httprequest.url" />
+                <meta property="og:description" t-attf-content="#{event.date_begin}" />
+                <meta property="og:image" t-attf-content="#{request.httprequest.url_root}logo.png" />
+                <!--  Twitter sharing data -->
+                <meta name="twitter:card" content="summary" />
+                <meta name="twitter:site" t-attf-content="@#{res_company.name}" />
+                <meta name="twitter:title" t-att-content="event.name" />
+                <meta name="twitter:description" t-att-content="event.date_begin" />
+            </t>
         </div>
     </t>
 </template>
@@ -393,10 +411,9 @@
         <table itemprop="offers" class="table table-striped">
             <thead>
                 <tr>
-                    <th>Ticket Type</th>
-                    <th style="min-width: 100px">End of Registration</th>
-                    <th style="min-width: 100px">Price</th>
-                    <th></th>
+                    <th class="col-sm-4 col-md-6">Ticket Type</th>
+                    <th>End of Registration</th>
+                    <th class="o_th_price">Price</th>
                     <th>Quantity</th>
                 </tr>
             </thead>
@@ -412,7 +429,6 @@
                         </t>
                     </td>
                     <td>Free</td>
-                    <td></td>
                     <td>
                         <select t-if="event.seats_available or event.seats_availability == 'unlimited'" name="nb_register-0" class="form-control">
                             <t t-foreach="range(0, (event.seats_availability == 'unlimited' or event.seats_available > 9) and 10 or event.seats_available+1)" t-as="nb">
@@ -457,12 +473,8 @@
                             <t t-foreach="tickets" t-as="ticket">
                                 <h4 class="page-header mt16">
                                     <strong>
-                                        Ticket Type #<t t-raw="counter_type"/>: <t t-esc="ticket['name']"/> (
-                                        <t t-if="ticket['price'] > 0">
-                                            <t t-esc="ticket['price']"/>
-                                            <t t-esc="website.pricelist_id.currency_id.symbol"/>
-                                        </t>
-                                        <t t-if="ticket['price'] == 0">Free</t>)
+                                        Ticket Type #<t t-raw="counter_type"/>: <t t-esc="ticket['name']"/>
+                                        <t t-if="ticket['price'] == 0">(Free)</t>
                                     </strong>
                                 </h4>
                                 <div class="row">
@@ -473,7 +485,8 @@
                                 <t t-foreach="range(1, ticket['quantity'] + 1)" t-as="att_counter" name="attendee_loop">
                                     <t t-set="counter" t-value="counter + 1"/>
                                     <div class="row mb4">
-                                        <div class="col-md-4"><input class='form-control' type='text' t-attf-name="#{counter}-name" required="This field is required" t-att-placeholder="'Attendee #%s' %counter"/></div>
+                                        <t t-set="attendee_placeholder">Attendee #%s</t>
+                                        <div class="col-md-4"><input class='form-control' type='text' t-attf-name="#{counter}-name" required="This field is required" t-att-placeholder="attendee_placeholder %counter"/></div>
                                         <div class="col-md-5"><input class='form-control' type='email' t-attf-name="#{counter}-email" required="This field is required"/></div>
                                         <div class="col-md-3"><input class='form-control' type='tel' t-attf-name="#{counter}-phone"/></div>
                                         <input class='hidden' type='text' t-attf-name="#{counter}-ticket_id" t-attf-value="#{ticket['id']}"/>
@@ -506,7 +519,7 @@
                 <div class="col-md-9 mt16">
                     <h4><a t-attf-href="/event/#{slug(event)}"><t t-esc="event.name"/></a></h4>
                     <i class="fa fa-clock-o"/> <span itemprop="startDate" t-esc="event.date_begin_located[:-3]"> </span> <i>to</i> <span itemprop="endDate" t-esc="event.date_end_located[:-3]"> </span>
-                    <div itemprop="location" class="mt16 mb8" t-field="event.address_id" t-field-options='{
+                    <div itemprop="location" class="mt16 mb8" t-field="event.address_id" t-options='{
                             "widget": "contact",
                             "fields": ["address", "phone", "mobile", "fax", "email"]
                             }'/>

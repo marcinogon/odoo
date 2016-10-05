@@ -23,7 +23,7 @@ var PivotView = View.extend({
     events: {
         'click .o_pivot_header_cell_opened': 'on_open_header_click',
         'click .o_pivot_header_cell_closed': 'on_closed_header_click',
-        'click .o_pivot_field_menu': 'on_field_menu_selection',
+        'click .o_pivot_field_menu a': 'on_field_menu_selection',
         'click td': 'on_cell_click',
         'click .o_pivot_measure_row': 'on_measure_row_click',
     },
@@ -179,7 +179,7 @@ var PivotView = View.extend({
                 }
             }
         });
-        this.measures.__count__ = {string: _t("Quantity"), type: "integer"};
+        this.measures.__count__ = {string: _t("Count"), type: "integer"};
     },
     do_search: function (domain, context, group_by) {
         if (!this.ready) {
@@ -692,7 +692,6 @@ var PivotView = View.extend({
         if (width > 1) {
             var total_cell = {width:nbr_measures, height: depth, title:""};
             if (nbr_measures === 1) {
-                total_cell.title = this.measures[this.active_measures[0]].string;
                 total_cell.total = true;
             }
             result[0].push(total_cell);
@@ -818,7 +817,7 @@ var PivotView = View.extend({
             title: this.title,
         };
         if(table.measure_row.length + 1 > 256) {
-            c.show_message(_t("For Excel compatibility, data cannot be exported if there is more than 256 columns.\n\nTip: try to flip axis, filter further or reduce the number of measures."));
+            c.show_message(_t("For Excel compatibility, data cannot be exported if there are more than 256 columns.\n\nTip: try to flip axis, filter further or reduce the number of measures."));
             return;
         }
         session.get_file({

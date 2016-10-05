@@ -1,7 +1,7 @@
 # Translation of Odoo Server.
 # This file contains the translation of the following modules:
 # * l10n_in_hr_payroll
-# 
+#
 # Translators:
 # Khwunchai Jaengsawang <khwunchai.j@ku.th>, 2016
 msgid ""
@@ -9,13 +9,13 @@ msgstr ""
 "Project-Id-Version: Odoo 9.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2015-09-21 09:27+0000\n"
-"PO-Revision-Date: 2016-04-11 12:09+0000\n"
+"PO-Revision-Date: 2016-07-05 03:03+0000\n"
 "Last-Translator: Khwunchai Jaengsawang <khwunchai.j@ku.th>\n"
 "Language-Team: Thai (http://www.transifex.com/odoo/odoo-9/language/th/)\n"
+"Language: th\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
-"Language: th\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 #. module: l10n_in_hr_payroll
@@ -534,7 +534,9 @@ msgstr "จัดกลุ่มตาม"
 #. module: l10n_in_hr_payroll
 #: model:ir.model.fields,help:l10n_in_hr_payroll.field_hr_contract_house_rent_allowance_metro_nonmetro
 msgid ""
-"HRA is an allowance given by the employer to the employee for taking care of his rental or accommodation expenses for metro city it is 50% and for non metro 40%. \n"
+"HRA is an allowance given by the employer to the employee for taking care of "
+"his rental or accommodation expenses for metro city it is 50% and for non "
+"metro 40%. \n"
 "HRA computed as percentage(%)"
 msgstr ""
 
@@ -1033,7 +1035,7 @@ msgstr ""
 #. module: l10n_in_hr_payroll
 #: model:ir.ui.view,arch_db:l10n_in_hr_payroll.report_payrolladvice
 msgid "Yours Sincerely"
-msgstr ""
+msgstr "ขอแสดงความนับถือ"
 
 #. module: l10n_in_hr_payroll
 #: model:ir.ui.view,arch_db:l10n_in_hr_payroll.report_payrolladvice
@@ -1043,7 +1045,7 @@ msgstr ""
 #. module: l10n_in_hr_payroll
 #: model:ir.ui.view,arch_db:l10n_in_hr_payroll.report_hrsalarybymonth
 msgid "of"
-msgstr ""
+msgstr "ของ"
 
 #. module: l10n_in_hr_payroll
 #: model:ir.model,name:l10n_in_hr_payroll.model_report_l10n_in_hr_payroll_report_hrsalarybymonth

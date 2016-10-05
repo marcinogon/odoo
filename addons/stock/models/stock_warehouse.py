@@ -133,7 +133,7 @@ class Warehouse(models.Model):
         if vals.get('resupply_wh_ids') and not vals.get('resupply_route_ids'):
             resupply_whs = self.resolve_2many_commands('resupply_wh_ids', vals['resupply_wh_ids'])
             new_resupply_whs = self.browse([wh['id'] for wh in resupply_whs])
-            old_resupply_whs = {(warehouse.id, warehouse.resupply_wh_ids) for warehouse in warehouses}
+            old_resupply_whs = {warehouse.id: warehouse.resupply_wh_ids for warehouse in warehouses}
 
         if 'default_resupply_wh_id' in vals:
             if vals.get('default_resupply_wh_id') and any(vals['default_resupply_wh_id'] == warehouse.id for warehouse in warehouses):
@@ -188,7 +188,7 @@ class Warehouse(models.Model):
         color = available_colors and available_colors[0] or 0
 
         # suit for each warehouse: reception, internal, pick, pack, ship
-        max_sequence = PickingType.search_read([], ['sequence'], limit=1, order='sequence desc')
+        max_sequence = PickingType.search_read([('sequence', '!=', False)], ['sequence'], limit=1, order='sequence desc')
         max_sequence = max_sequence and max_sequence[0]['sequence'] or 0
 
         warehouse_data = {}
@@ -732,15 +732,15 @@ class Orderpoint(models.Model):
         readonly=True, required=True,
         default=lambda self: self._context.get('product_uom', False))
     product_min_qty = fields.Float(
-        'Minimum Quantity', digits_compute=dp.get_precision('Product Unit of Measure'), required=True,
+        'Minimum Quantity', digits=dp.get_precision('Product Unit of Measure'), required=True,
         help="When the virtual stock goes below the Min Quantity specified for this field, Odoo generates "
              "a procurement to bring the forecasted quantity to the Max Quantity.")
     product_max_qty = fields.Float(
-        'Maximum Quantity', digits_compute=dp.get_precision('Product Unit of Measure'), required=True,
+        'Maximum Quantity', digits=dp.get_precision('Product Unit of Measure'), required=True,
         help="When the virtual stock goes below the Min Quantity, Odoo generates "
              "a procurement to bring the forecasted quantity to the Quantity specified as Max Quantity.")
     qty_multiple = fields.Float(
-        'Qty Multiple', digits_compute=dp.get_precision('Product Unit of Measure'),
+        'Qty Multiple', digits=dp.get_precision('Product Unit of Measure'),
         default=1, required=True,
         help="The procurement quantity will be rounded up to this multiple.  If it is 0, the exact quantity will be used.")
     procurement_ids = fields.One2many('procurement.order', 'orderpoint_id', 'Created Procurements')
@@ -801,16 +801,16 @@ class Orderpoint(models.Model):
         for orderpoint_id, procurement_id, product_uom_id, procurement_qty, template_uom_id, move_qty in self._cr.fetchall():
             if procurement_id not in procurements_done:  # count procurement once, if multiple move in this orderpoint/procurement combo
                 procurements_done.add(procurement_id)
-                res[orderpoint_id] += UoM._compute_qty(product_uom_id, procurement_qty, template_uom_id, round=False)
+                res[orderpoint_id] += UoM.browse(product_uom_id)._compute_quantity(procurement_qty, UoM.browse(template_uom_id), round=False)
             if move_qty:
                 res[orderpoint_id] -= move_qty
         return res
 
     def _get_date_planned(self, start_date):
         days = self.lead_days or 0.0
-        if self.lead_type == 'purchase':
+        if self.lead_type == 'supplier':
             # These days will be substracted when creating the PO
-            days += self.product_id._select_seller(self.product_id).delay or 0.0
+            days += self.product_id._select_seller().delay or 0.0
         date_planned = start_date + relativedelta.relativedelta(days=days)
         return date_planned.strftime(DEFAULT_SERVER_DATE_FORMAT)
 

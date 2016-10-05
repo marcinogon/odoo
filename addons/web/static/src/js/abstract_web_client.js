@@ -30,14 +30,24 @@ var WebClient = Widget.extend({
         toggle_fullscreen: function (event) {
             this.toggle_fullscreen(event.data.fullscreen);
         },
+        current_action_updated: function (e) {
+            this.current_action_updated(e.data.action);
+        },
+        perform_rpc: function(event) {
+            if (event.data.on_fail) {
+                event.data.on_fail();
+            }
+        },
+        perform_model_rpc: function(event) {
+            if (event.data.on_fail) {
+                event.data.on_fail();
+            }
+        },
     },
-    init: function(parent, client_options) {
+    init: function(parent) {
         this.client_options = {};
         this._super(parent);
         this.origin = undefined;
-        if (client_options) {
-            _.extend(this.client_options, client_options);
-        }
         this._current_state = null;
         this.menu_dm = new utils.DropMisordered();
         this.action_mutex = new utils.Mutex();
@@ -66,10 +76,8 @@ var WebClient = Widget.extend({
                     return $.when();
                 }
             }).then(function () {
-                if (self.client_options.action) {
-                    self.do_action(self.client_options.action);
-                    delete(self.client_options.action);
-                }
+                // Listen to 'scroll' event and propagate it on main bus
+                self.action_manager.$el.on('scroll', core.bus.trigger.bind(core.bus, 'scroll'));
                 core.bus.trigger('web_client_ready');
             });
     },
@@ -224,6 +232,9 @@ var WebClient = Widget.extend({
             );
             this.connection_notification = false;
         }
+    },
+    // Handler to be overwritten
+    current_action_updated: function () {
     },
     // --------------------------------------------------------------
     // Scrolltop handling

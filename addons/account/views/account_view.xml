@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<openerp>
+<odoo>
     <data>
 
 
@@ -13,8 +13,8 @@
                    <sheet>
                        <group>
                            <group>
-                             <field name="name"/>
                              <field name="code" placeholder="code"/>
+                             <field name="name"/>
                              <field name="user_type_id" widget="selection"/>
                              <field name="tax_ids" widget="many2many_tags"/>
                              <field name="tag_ids" widget="many2many_tags" domain="[('applicability', '!=', 'taxes')]" context="{'default_applicability': 'accounts'}" options="
@@ -283,7 +283,7 @@
                                         <field name="code"/>
                                         <field name="refund_sequence" attrs="{'invisible': [('type', 'not in', ['sale', 'purchase'])]}" groups="base.group_no_one"/>
                                         <field name="sequence_id" required="0" attrs="{'readonly': 1}" groups="base.group_no_one"/>
-                                        <field name="refund_sequence_id" attrs="{'required': [('refund_sequence', '=', True)], 'invisible': ['|',('type', 'not in', ['sale', 'purchase']), ('refund_sequence', '!=', True)]}" required="0" groups="base.group_no_one"/>
+                                        <field name="refund_sequence_id" attrs="{'invisible': ['|',('type', 'not in', ['sale', 'purchase']), ('refund_sequence', '!=', True)], 'required': [('type', 'in', ['sale', 'purchase']), ('refund_sequence', '=', True)]}" groups="base.group_no_one"/>
                                     </group>
                                     <group>
                                         <field name="default_debit_account_id" domain="[('deprecated', '=', False)]" />
@@ -562,7 +562,7 @@
                     </div>
                     <div class="oe_title oe_inline">
                         <label for="name" class="oe_edit_only"/>
-                        <h1><field name="name" placeholder="auto..."/></h1>
+                        <h1><field name="name"/></h1>
                     </div>
                     <group>
                         <group>
@@ -600,11 +600,11 @@
                                     <field name="sequence"  widget="handle"/>
                                     <field name="journal_entry_ids" invisible="1"/>
                                     <field name="date" attrs="{'readonly' : [('journal_entry_ids', '!=', [])] }"/>
-                                    <field name="ref" attrs="{'readonly' : [('journal_entry_ids', '!=', [])] }"/>
+                                    <field name="name" attrs="{'readonly' : [('journal_entry_ids', '!=', [])] }"/>
                                     <field name="partner_id" domain="['|',('parent_id','=',False),('is_company','=',True)]"
                                          context="{'default_supplier': 1}"
                                          attrs="{'readonly' : [('journal_entry_ids', '!=', [])] }"/>
-                                    <field name="name" attrs="{'readonly' : [('journal_entry_ids', '!=', [])] }"/>
+                                    <field name="ref" attrs="{'readonly' : [('journal_entry_ids', '!=', [])] }" groups="base.group_no_one"/>
                                     <field name="amount" attrs="{'readonly' : [('journal_entry_ids', '!=', [])] }"/>
                                     <field name="journal_currency_id" invisible="1"/>
                                     <field name="amount_currency" invisible="1" attrs="{'readonly' : [('journal_entry_ids', '!=', [])] }"/>
@@ -753,9 +753,9 @@
             <field name="tag">manual_reconciliation_view</field>
         </record>
 
-        <record id="view_account_operation_template_form" model="ir.ui.view">
-            <field name="name">account.operation.template.form</field>
-            <field name="model">account.operation.template</field>
+        <record id="view_account_reconcile_model_form" model="ir.ui.view">
+            <field name="name">account.reconcile.model.form</field>
+            <field name="model">account.reconcile.model</field>
             <field name="arch" type="xml">
                 <form string="Operation Templates">
                     <sheet>
@@ -806,9 +806,9 @@
                 </form>
             </field>
         </record>
-        <record id="view_account_operation_template_tree" model="ir.ui.view">
-            <field name="name">account.operation.template.tree</field>
-            <field name="model">account.operation.template</field>
+        <record id="view_account_reconcile_model_tree" model="ir.ui.view">
+            <field name="name">account.reconcile.model.tree</field>
+            <field name="model">account.reconcile.model</field>
             <field name="arch" type="xml">
                 <tree string="Bank Reconciliation Move Presets">
                     <field name="sequence" widget="handle" />
@@ -819,9 +819,9 @@
                 </tree>
             </field>
         </record>
-        <record id="view_account_operation_template_search" model="ir.ui.view">
-            <field name="name">account.operation.template.search</field>
-            <field name="model">account.operation.template</field>
+        <record id="view_account_reconcile_model_search" model="ir.ui.view">
+            <field name="name">account.reconcile.model.search</field>
+            <field name="model">account.reconcile.model</field>
             <field name="arch" type="xml">
                 <search string="Bank Reconciliation Move preset">
                         <filter string="With tax" domain="[('tax_id','!=',False)]"/>
@@ -830,12 +830,12 @@
                 </search>
             </field>
         </record>
-        <record id="action_account_operation_template" model="ir.actions.act_window">
+        <record id="action_account_reconcile_model" model="ir.actions.act_window">
             <field name="name">Reconciliation Models</field>
-            <field name="res_model">account.operation.template</field>
+            <field name="res_model">account.reconcile.model</field>
             <field name="view_type">form</field>
             <field name="view_mode">tree,form</field>
-            <field name="search_view_id" ref="view_account_operation_template_search"/>
+            <field name="search_view_id" ref="view_account_reconcile_model_search"/>
             <field name="help" type="html">
               <p class="oe_view_nocontent_create">
                 Click to create a reconciliation model.
@@ -1067,7 +1067,7 @@
                                                 class="oe_link"
                                                 type="object"
                                                 string="-> View partially reconciled entries"
-                                                attrs="{'invisible': ['|', ('reconciled', '=', True), '&amp;', ('matched_debit_ids', '=', []),('matched_credit_ids', '=', [])]}">
+                                                attrs="{'invisible': ['|', ('full_reconcile_id', '=', True), '&amp;', ('matched_debit_ids', '=', []),('matched_credit_ids', '=', [])]}">
                                             </button>
                                         </div>
                                     </group>
@@ -1128,7 +1128,7 @@
                                 <field name="analytic_account_id" groups="analytic.group_analytic_accounting"/>
                                 <separator colspan="4" string="Status"/>
                                 <newline/>
-                                <field name="reconciled"/>
+                                <field name="full_reconcile_id"/>
                             </group>
                         </page>
                         <page string="Analytic Lines" groups="analytic.group_analytic_accounting">
@@ -1136,6 +1136,17 @@
                         </page>
                     </notebook>
                 </form>
+            </field>
+        </record>
+        <record id="view_move_line_pivot" model="ir.ui.view">
+            <field name="name">account.move.line.pivot</field>
+            <field name="model">account.move.line</field>
+            <field name="arch" type="xml">
+                <pivot string="Journal Items">
+                    <field name="journal_id" type="row"/>
+                    <field name="date" type="col"/>
+                    <field name="balance" type="measure"/>
+                </pivot>
             </field>
         </record>
         <record id="view_move_line_tree" model="ir.ui.view">
@@ -1153,7 +1164,8 @@
                     <field name="partner_id"/>
                     <field name="account_id" options='{"no_open":True}' domain="[('company_id', '=', company_id)]"/>
                     <field name="analytic_account_id" groups="analytic.group_analytic_accounting"/>
-                    <field name="reconciled"/>
+                    <field name="reconciled" invisible="1"/>
+                    <field name="full_reconcile_id"/>
                     <field name="debit" sum="Total Debit"/>
                     <field name="credit" sum="Total Credit"/>
                     <field name="amount_currency" readonly="True" groups="base.group_multi_currency"/>
@@ -1197,7 +1209,7 @@
                     <filter string="Unposted" domain="[('move_id.state','=','draft')]" help="Unposted Journal Items"/>
                     <filter name="posted" string="Posted" domain="[('move_id.state','=','posted')]" help="Posted Journal Items"/>
                     <separator/>
-                    <filter string="Unreconciled" domain="[('reconciled','=',False), ('account_id.reconcile','=',True)]" help="Unreconciled Journal Items" name="unreconciled"/>
+                    <filter string="Unreconciled" domain="[('full_reconcile_id','=',False), ('account_id.reconcile','=',True)]" help="Journal items where matching number isn't set" name="unreconciled"/>
                     <separator/>
                     <filter string="Payable" domain="[('account_id.internal_type', '=', 'payable')]" help="From Payable accounts" name="payable"/>
                     <filter string="Receivable" domain="[('account_id.internal_type', '=', 'receivable')]" help="From Receivable accounts" name="receivable"/>
@@ -1220,7 +1232,7 @@
             <field name="name">Journal Items</field>
             <field name="res_model">account.move.line</field>
             <field name="view_id" ref="view_move_line_tree"/>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">tree,form,pivot</field>
         </record>
         <menuitem action="action_account_moves_all_a" id="menu_action_account_moves_all" parent="account.menu_finance_entries" sequence="1" groups="base.group_no_one" />
         <record id="action_account_moves_all_tree" model="ir.actions.act_window">
@@ -1435,7 +1447,7 @@
             <field name="name">account.payment.term.line.tree</field>
             <field name="model">account.payment.term.line</field>
             <field name="arch" type="xml">
-                <tree string="Payment Term">
+                <tree string="Payment Terms">
                     <field name="sequence" widget="handle"/>
                     <field name="value" string="Due Type"/>
                     <field name="value_amount" attrs="{'readonly':[('value','=','balance')]}"/>
@@ -1448,7 +1460,7 @@
             <field name="name">account.payment.term.line.form</field>
             <field name="model">account.payment.term.line</field>
             <field name="arch" type="xml">
-                <form string="Payment Term">
+                <form string="Payment Terms">
                     <group>
                         <group string="Term Type">
                             <field name="value" widget="radio"/>
@@ -1477,8 +1489,8 @@
             <field name="name">account.payment.term.search</field>
             <field name="model">account.payment.term</field>
             <field name="arch" type="xml">
-                <search string="Payment Term">
-                    <field name="name" string="Payment Term"/>
+                <search string="Payment Terms">
+                    <field name="name" string="Payment Terms"/>
                     <field name="active"/>
                 </search>
             </field>
@@ -1487,7 +1499,7 @@
             <field name="name">account.payment.term.form</field>
             <field name="model">account.payment.term</field>
             <field name="arch" type="xml">
-                <form string="Payment Term">
+                <form string="Payment Terms">
                     <group col="4">
                         <field name="name"/>
                         <field name="active"/>
@@ -1894,6 +1906,10 @@
             parent="menu_finance_receivables"
             action="base.action_partner_customer_form" sequence="100"/>
 
+        <menuitem id="menu_product_template_action" name="Sellable Products"
+            parent="menu_finance_receivables"
+            action="product.product_template_action" sequence="110"/>
+
         <menuitem id="menu_account_supplier" name="Vendors"
             parent="menu_finance_payables"
             action="base.action_partner_supplier_form" sequence="100"/>
@@ -1992,5 +2008,12 @@
 
         <menuitem id="menu_account_report_tree_hierarchy" name="Account Reports Hierarchy" parent="menu_account_reports" action="action_account_report_tree_hierarchy"/>
 
+        <!-- Manual reconciliation -->
+        <record id="action_manual_reconciliation" model="ir.actions.client">
+            <field name="name">Manual Reconciliation</field>
+            <field name="tag">manual_reconciliation_view</field>
+        </record>
+
+        <menuitem id="menu_action_manual_reconciliation" name="Manual Payments &amp; Invoices Matching" parent="menu_finance_entries" action="action_manual_reconciliation" sequence="25"/>
     </data>
-</openerp>
+</odoo>

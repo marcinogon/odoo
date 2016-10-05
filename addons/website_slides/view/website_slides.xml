@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<openerp>
+<odoo>
 <data>
 
 <!-- add link to the standard footer -->
@@ -44,7 +44,7 @@
                             <div>
                                 <a t-attf-href="/slides/#{slug(channel)}">
                                     <img t-if="channel.promoted_slide_id" t-attf-src="/web/image/slide.slide/#{channel.promoted_slide_id.id}/image_medium" class="img-responsive oe_slides_channel_thumbnail"/>
-                                    <img t-if="not channel.promoted_slide_id" src="/website_slides/static/description/channel-default.jpg" class="img-responsive oe_slides_opacity"/>
+                                    <img t-if="not channel.promoted_slide_id" src="/website_slides/static/src/img/channel-default.jpg" class="img-responsive oe_slides_opacity"/>
                                 </a>
                             </div>
                             <div>
@@ -187,7 +187,7 @@
 <!-- Channel main template -->
 <template id='home' name="Odoo Slides">
      <t t-set="head">
-        <t t-call-assets="website.pdf_js_lib" t-css="false"/>
+        <t t-call-assets="web.pdf_js_lib" t-css="false"/>
         <script type="text/javascript" src="/website_slides/static/lib/pdfslidesviewer/PDFSlidesViewer.js"></script>
     </t>
     <t t-call="website.layout">
@@ -201,7 +201,7 @@
                     <t t-set="header_object" t-value="category"/>
                 </t>
             </t>
-            <section t-if="not channel.promoted_slide_id and not tag and not slide_type and not search and not is_public_user and not category and display_channel_settings" class="wrap mt16 mb0" groups="base.group_website_designer">
+            <section t-if="not channel.promoted_slide_id and not tag and not slide_type and not search and not is_public_user and not category and display_channel_settings" class="wrap mt16 mb0" groups="website.group_website_designer">
                 <div class="container">
                     <div class="alert alert-danger alert-dismissable mb0">
                         <button type="button" class="close o_slides_hide_channel_settings" t-att-data-channel-id="channel.id" data-dismiss="alert">x</button>
@@ -580,7 +580,7 @@
                                                 <t t-call="website.publish_short">
                                                     <t t-set="object" t-value="message"/>
                                                 </t>
-                                                <span t-field="message.author_id" style="display: inline-block;" t-field-options='{"widget": "contact", "fields": ["name"]}'/>
+                                                <span t-field="message.author_id" style="display: inline-block;" t-options='{"widget": "contact", "fields": ["name"]}'/>
                                                 <span class="text-muted">on<span t-field="message.date"/></span>
                                                 <div t-field="message.body" class="discussion_scroll_post"></div>
                                             </div>
@@ -785,4 +785,4 @@
 </template>
 
 </data>
-</openerp>
+</odoo>

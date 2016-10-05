@@ -72,7 +72,7 @@ var PartnerInviteDialog = Dialog.extend({
         var data = this.$input.select2('data');
         if(data.length >= 1){
             var ChannelModel = new Model('mail.channel');
-            return ChannelModel.call('channel_invite', [], {ids : [this.channel_id], partner_ids: _.pluck(data, 'id')})
+            return ChannelModel.call('channel_invite', [this.channel_id], {partner_ids: _.pluck(data, 'id')})
                 .then(function(){
                     var names = _.escape(_.pluck(data, 'text').join(', '));
                     var notification = _.str.sprintf(_t('You added <b>%s</b> to the conversation.'), names);
@@ -300,12 +300,12 @@ var ChatAction = Widget.extend(ControlPanelMixin, {
 
     render_sidebar: function () {
         var self = this;
-        var $sidebar = $(QWeb.render("mail.chat.Sidebar", {
+        var $sidebar = this._render_sidebar({
             active_channel_id: this.channel ? this.channel.id: undefined,
             channels: chat_manager.get_channels(),
             needaction_counter: chat_manager.get_needaction_counter(),
             starred_counter: chat_manager.get_starred_counter(),
-        }));
+        });
         this.$(".o_mail_chat_sidebar").html($sidebar.contents());
 
         this.$('.o_mail_add_channel[data-type=public]').find("input").autocomplete({
@@ -362,6 +362,10 @@ var ChatAction = Widget.extend(ControlPanelMixin, {
                 chat_manager.create_channel(name, "private");
             }
         });
+    },
+
+    _render_sidebar: function (options) {
+        return $(QWeb.render("mail.chat.Sidebar", options));
     },
 
     render_snackbar: function (template, context, timeout) {
@@ -487,6 +491,7 @@ var ChatAction = Widget.extend(ControlPanelMixin, {
             display_empty_channel: !messages.length && !this.domain.length,
             display_no_match: !messages.length && this.domain.length,
             display_subject: this.channel.mass_mailing || this.channel.id === "channel_inbox",
+            display_email_icon: false,
             display_reply_icon: true,
         };
     },
@@ -657,7 +662,6 @@ var ChatAction = Widget.extend(ControlPanelMixin, {
             target: 'current'
         });
     },
-            context: "{'default_no_auto_thread': False}",
 });
 
 

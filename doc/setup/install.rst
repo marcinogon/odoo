@@ -61,11 +61,11 @@ refer to :ref:`setup/enterprise` (except for :ref:`setup/install/source`).
 If you wish to access the Enterprise installers/source code, you can:
 
 * Go to the Download_ page and log in with your customer credentials
-* Download the source on GitHub using git_
+* Download the source on GitHub using git_(available to partners only)
 
 .. note:: If you do not have access to our Enterprise repository, you can request
     it be e-mailing your sales representative or our online support with
-    your subscription number and GitHub username.
+    your subscription number and GitHub username. (available to partners only)
 
 .. warning:: Enterprise deb and rpm packages do not have repositories, so automatic
     update will not work. Reinstalling the latest package version will be needed
@@ -131,7 +131,7 @@ Configuration
 '''''''''''''
 
 The :ref:`configuration file <reference/cmdline/config>` can be found at
-:file:`{%PROGRAMFILES%}\\Odoo 9.0-{id}\\server\\openerp-server.conf`.
+:file:`{%PROGRAMFILES%}\\Odoo 9.0-{id}\\server\\odoo.conf`.
 
 The configuration file can be edited to connect to a remote Postgresql, edit
 file locations or set a dbfilter.
@@ -192,7 +192,7 @@ Configuration
 '''''''''''''
 
 The :ref:`configuration file <reference/cmdline/config>` can be found at
-:file:`/etc/odoo/openerp-server.conf`
+:file:`/etc/odoo/odoo.conf`
 
 When the configuration file is edited, Odoo must be restarted using
 ``service``:
@@ -236,7 +236,7 @@ Execute the following commands to install Odoo 9.0 Community on your server:
 Enterprise
 ''''''''''
 
-To install Odoo 9.0 Enterprise, execute these commands:
+For Odoo 9.0 Enterprise, get the package from the Download_ page. Then run:
 
 .. code-block:: console
 
@@ -244,8 +244,7 @@ To install Odoo 9.0 Enterprise, execute these commands:
     $ sudo postgresql-setup initdb
     $ sudo systemctl enable postgresql
     $ sudo systemctl start postgresql
-    $ sudo yum-config-manager --add-repo=https://nightly.odoo.com/9.0/nightly/rpm/odoo.repo
-    $ sudo yum install -y odoo
+    $ sudo yum localinstall odoo_9.0.latest.noarch.rpm
     $ sudo systemctl enable odoo
     $ sudo systemctl start odoo
 
@@ -260,7 +259,7 @@ Configuration
 '''''''''''''
 
 The :ref:`configuration file <reference/cmdline/config>` can be found at
-:file:`/etc/odoo/openerp-server.conf`
+:file:`/etc/odoo/odoo.conf`
 
 When the configuration file is edited, Odoo must be restarted via SystemD:
 

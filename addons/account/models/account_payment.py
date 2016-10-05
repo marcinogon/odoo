@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from openerp import models, fields, api, _
-from openerp.exceptions import UserError, ValidationError
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError, ValidationError
 
 MAP_INVOICE_TYPE_PARTNER_TYPE = {
     'out_invoice': 'customer',
@@ -42,7 +42,7 @@ class account_abstract_payment(models.AbstractModel):
     currency_id = fields.Many2one('res.currency', string='Currency', required=True, default=lambda self: self.env.user.company_id.currency_id)
     payment_date = fields.Date(string='Payment Date', default=fields.Date.context_today, required=True, copy=False)
     communication = fields.Char(string='Memo')
-    journal_id = fields.Many2one('account.journal', string='Payment Method', required=True, domain=[('type', 'in', ('bank', 'cash'))])
+    journal_id = fields.Many2one('account.journal', string='Payment Journal', required=True, domain=[('type', 'in', ('bank', 'cash'))])
     company_id = fields.Many2one('res.company', related='journal_id.company_id', string='Company', readonly=True)
 
     hide_payment_method = fields.Boolean(compute='_compute_hide_payment_method',
@@ -193,6 +193,9 @@ class account_payment(models.Model):
 
     payment_type = fields.Selection(selection_add=[('transfer', 'Internal Transfer')])
     payment_reference = fields.Char(copy=False, readonly=True, help="Reference of the document used to issue this payment. Eg. check number, file name, etc.")
+    move_name = fields.Char(string='Journal Entry Name', readonly=True,
+        default=False, copy=False,
+        help="Technical field holding the number given to the journal entry, automatically set when the statement line is reconciled then stored to set the same number again if the line is cancelled, set to draft and re-processed again.")
 
     # Money flows from the journal_id's default_debit_account_id or default_credit_account_id to the destination_account_id
     destination_account_id = fields.Many2one('account.account', compute='_compute_destination_account_id', readonly=True)
@@ -267,7 +270,7 @@ class account_payment(models.Model):
         return {
             'name': _('Journal Items'),
             'view_type': 'form',
-            'view_mode': 'tree',
+            'view_mode': 'tree,form',
             'res_model': 'account.move.line',
             'view_id': False,
             'type': 'ir.actions.act_window',
@@ -279,7 +282,7 @@ class account_payment(models.Model):
         return {
             'name': _('Paid Invoices'),
             'view_type': 'form',
-            'view_mode': 'tree',
+            'view_mode': 'tree,form',
             'res_model': 'account.invoice',
             'view_id': False,
             'type': 'ir.actions.act_window',
@@ -289,6 +292,17 @@ class account_payment(models.Model):
     @api.multi
     def button_dummy(self):
         return True
+
+    @api.multi
+    def unreconcile(self):
+        """ Set back the payments in 'posted' or 'sent' state, without deleting the journal entries.
+            Called when cancelling a bank statement line linked to a pre-registered payment.
+        """
+        for payment in self:
+            if payment.payment_reference:
+                payment.write({'state': 'sent'})
+            else:
+                payment.write({'state': 'posted'})
 
     @api.multi
     def cancel(self):
@@ -302,8 +316,10 @@ class account_payment(models.Model):
 
     @api.multi
     def unlink(self):
-        if any(rec.state != 'draft' for rec in self):
+        if any(bool(rec.move_line_ids) for rec in self):
             raise UserError(_("You can not delete a payment that is already posted"))
+        if any(rec.move_name for rec in self):
+            raise UserError(_('It is not allowed to delete a payment that already created a journal entry since it would create a gap in the numbering. You should create the journal entry again and cancel it thanks to a regular revert.'))
         return super(account_payment, self).unlink()
 
     @api.multi
@@ -349,7 +365,7 @@ class account_payment(models.Model):
                 transfer_debit_aml = rec._create_transfer_entry(amount)
                 (transfer_credit_aml + transfer_debit_aml).reconcile()
 
-            rec.state = 'posted'
+            rec.write({'state': 'posted', 'move_name': move.name})
 
     def _create_payment_entry(self, amount):
         """ Create a journal entry corresponding to a payment, if the payment references invoice(s) they are reconciled.
@@ -439,7 +455,7 @@ class account_payment(models.Model):
             raise UserError(_('Configuration Error !'), _('The journal %s does not have a sequence, please specify one.') % journal.name)
         if not journal.sequence_id.active:
             raise UserError(_('Configuration Error !'), _('The sequence of journal %s is deactivated.') % journal.name)
-        name = journal.with_context(ir_sequence_date=self.payment_date).sequence_id.next_by_id()
+        name = self.move_name or journal.with_context(ir_sequence_date=self.payment_date).sequence_id.next_by_id()
         return {
             'name': name,
             'date': self.payment_date,

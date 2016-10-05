@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
+
 """
 Web_editor-context rendering needs to add some metadata to rendered and allow to edit fields,
 as well as render a few fields differently.
 
-Also, adds methods to convert values back to openerp models.
+Also, adds methods to convert values back to Odoo models.
 """
 
 import ast
 import cStringIO
-import datetime
 import itertools
 import json
 import logging
@@ -22,23 +23,19 @@ import pytz
 from dateutil import parser
 from lxml import etree, html
 from PIL import Image as I
-import openerp.modules
+import odoo.modules
 
-from odoo import api
-
-import openerp
-from openerp.osv import orm, fields
-from openerp.tools import ustr, DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT
-from openerp.tools import html_escape as escape
-from openerp.addons.base.ir import ir_qweb
-from openerp.tools.translate import translate
+from odoo import api, models, fields
+from odoo.tools import ustr
+from odoo.tools import html_escape as escape
+from odoo.addons.base.ir import ir_qweb
 
 REMOTE_CONNECTION_TIMEOUT = 2.5
 
 logger = logging.getLogger(__name__)
 
 
-class QWeb(orm.AbstractModel):
+class QWeb(models.AbstractModel):
     """ QWeb object for rendering editor stuff
     """
     _inherit = 'ir.qweb'
@@ -70,7 +67,7 @@ class QWeb(orm.AbstractModel):
 #------------------------------------------------------
 
 
-class Field(orm.AbstractModel):
+class Field(models.AbstractModel):
     _name = 'ir.qweb.field'
     _inherit = 'ir.qweb.field'
 
@@ -84,7 +81,7 @@ class Field(orm.AbstractModel):
             attrs['placeholder'] = placeholder
 
         if options['translate'] and field.type in ('char', 'text'):
-            name = "%s,%s" % (record._model._name, field_name)
+            name = "%s,%s" % (record._name, field_name)
             domain = [('name', '=', name), ('res_id', '=', record.id), ('type', '=', 'model'), ('lang', '=', options.get('lang'))]
             translation = record.env['ir.translation'].search(domain, limit=1)
             attrs['data-oe-translation-state'] = translation and translation.state or 'to_translate'
@@ -99,14 +96,14 @@ class Field(orm.AbstractModel):
         return self.value_from_string(element.text_content().strip())
 
 
-class Integer(orm.AbstractModel):
+class Integer(models.AbstractModel):
     _name = 'ir.qweb.field.integer'
     _inherit = 'ir.qweb.field.integer'
 
     value_from_string = int
 
 
-class Float(orm.AbstractModel):
+class Float(models.AbstractModel):
     _name = 'ir.qweb.field.float'
     _inherit = 'ir.qweb.field.float'
 
@@ -118,7 +115,7 @@ class Float(orm.AbstractModel):
                           .replace(lang.decimal_point, '.'))
 
 
-class ManyToOne(orm.AbstractModel):
+class ManyToOne(models.AbstractModel):
     _name = 'ir.qweb.field.many2one'
     _inherit = 'ir.qweb.field.many2one'
 
@@ -147,7 +144,7 @@ class ManyToOne(orm.AbstractModel):
         return None
 
 
-class Contact(orm.AbstractModel):
+class Contact(models.AbstractModel):
     _name = 'ir.qweb.field.contact'
     _inherit = 'ir.qweb.field.contact'
 
@@ -160,24 +157,10 @@ class Contact(orm.AbstractModel):
     # helper to call the rendering of contact field
     @api.model
     def get_record_to_html(self, ids, options=None):
-        node = self.record_to_html('record', {
-            'record': self.env['res.partner'].browse(ids[0])},
-            options=options)
-        return node and node.__html__()
+        return self.value_to_html(self.env['res.partner'].browse(ids[0]), options=options)
 
 
-def parse_fuzzy(in_format, value):
-    day_first = in_format.find('%d') < in_format.find('%m')
-
-    if '%y' in in_format:
-        year_first = in_format.find('%y') < in_format.find('%d')
-    else:
-        year_first = in_format.find('%Y') < in_format.find('%d')
-
-    return parser.parse(value, dayfirst=day_first, yearfirst=year_first)
-
-
-class Date(orm.AbstractModel):
+class Date(models.AbstractModel):
     _name = 'ir.qweb.field.date'
     _inherit = 'ir.qweb.field.date'
 
@@ -193,11 +176,10 @@ class Date(orm.AbstractModel):
         if not value:
             return False
 
-        datetime.datetime.strptime(value, DEFAULT_SERVER_DATE_FORMAT)
         return value
 
 
-class DateTime(orm.AbstractModel):
+class DateTime(models.AbstractModel):
     _name = 'ir.qweb.field.datetime'
     _inherit = 'ir.qweb.field.datetime'
 
@@ -206,13 +188,11 @@ class DateTime(orm.AbstractModel):
         attrs = super(DateTime, self).attributes(record, field_name, options, values)
         value = record[field_name]
         if isinstance(value, basestring):
-            value = datetime.datetime.strptime(
-                value, DEFAULT_SERVER_DATETIME_FORMAT)
+            value = fields.Datetime.from_string(value)
         if value:
             # convert from UTC (server timezone) to user timezone
-            value = fields.datetime.context_timestamp(
-                self._cr, self._uid, timestamp=value, context=self.env.context)
-            value = value.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+            value = fields.Datetime.context_timestamp(self, timestamp=value)
+            value = fields.Datetime.to_string(value)
         attrs['data-oe-original'] = value
         return attrs
 
@@ -241,10 +221,10 @@ class DateTime(orm.AbstractModel):
                     exc_info=True)
 
         # format back to string
-        return dt.strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+        return fields.Datetime.to_string(dt)
 
 
-class Text(orm.AbstractModel):
+class Text(models.AbstractModel):
     _name = 'ir.qweb.field.text'
     _inherit = 'ir.qweb.field.text'
 
@@ -253,7 +233,7 @@ class Text(orm.AbstractModel):
         return html_to_text(element)
 
 
-class Selection(orm.AbstractModel):
+class Selection(models.AbstractModel):
     _name = 'ir.qweb.field.selection'
     _inherit = 'ir.qweb.field.selection'
 
@@ -271,7 +251,7 @@ class Selection(orm.AbstractModel):
                          value, selection))
 
 
-class HTML(orm.AbstractModel):
+class HTML(models.AbstractModel):
     _name = 'ir.qweb.field.html'
     _inherit = 'ir.qweb.field.html'
 
@@ -285,7 +265,7 @@ class HTML(orm.AbstractModel):
         return '\n'.join(content)
 
 
-class Image(orm.AbstractModel):
+class Image(models.AbstractModel):
     """
     Widget options:
 
@@ -296,7 +276,7 @@ class Image(orm.AbstractModel):
     _inherit = 'ir.qweb.field.image'
 
     @api.model
-    def record_to_html(self, record, field_name, options, values=None):
+    def record_to_html(self, record, field_name, options):
         assert options['tagName'] != 'img',\
             "Oddly enough, the root tag of an image field can not be img. " \
             "That is because the image goes into the tag, or it gets the " \
@@ -323,8 +303,14 @@ class Image(orm.AbstractModel):
         elif options.get('alt'):
             alt = options['alt']
 
-        img = '<img class="%s" src="%s" style="%s"%s/>' % \
-            (classes, src, options.get('style', ''), ' alt="%s"' % alt if alt else '')
+        src_zoom = None
+        if options.get('zoom') and getattr(record, options['zoom'], None):
+            src_zoom = '/web/image/%s/%s/%s%s?unique=%s' % (record._name, record.id, options['zoom'], max_size, sha)
+        elif options.get('zoom'):
+            src_zoom = options['zoom']
+
+        img = '<img class="%s" src="%s" style="%s"%s%s/>' % \
+            (classes, src, options.get('style', ''), ' alt="%s"' % alt if alt else '', ' data-zoom="1" data-zoom-image="%s"' % src_zoom if src_zoom else '')
         return ir_qweb.unicodifier(img)
 
     local_url_re = re.compile(r'^/(?P<module>[^]]+)/static/(?P<rest>.+)$')
@@ -362,7 +348,7 @@ class Image(orm.AbstractModel):
             if sep and sep != '/':
                 rest.replace(sep, '/')
 
-        path = openerp.modules.get_module_resource(
+        path = odoo.modules.get_module_resource(
             match.group('module'), 'static', *(rest.split('/')))
 
         if not path:
@@ -404,7 +390,7 @@ class Image(orm.AbstractModel):
         return out.getvalue().encode('base64')
 
 
-class Monetary(orm.AbstractModel):
+class Monetary(models.AbstractModel):
     _name = 'ir.qweb.field.monetary'
     _inherit = 'ir.qweb.field.monetary'
 
@@ -418,7 +404,7 @@ class Monetary(orm.AbstractModel):
                           .replace(lang.decimal_point, '.'))
 
 
-class Duration(orm.AbstractModel):
+class Duration(models.AbstractModel):
     _name = 'ir.qweb.field.duration'
     _inherit = 'ir.qweb.field.duration'
 
@@ -436,14 +422,14 @@ class Duration(orm.AbstractModel):
         return float(value)
 
 
-class RelativeDatetime(orm.AbstractModel):
+class RelativeDatetime(models.AbstractModel):
     _name = 'ir.qweb.field.relative'
     _inherit = 'ir.qweb.field.relative'
 
     # get formatting from ir.qweb.field.relative but edition/save from datetime
 
 
-class QwebView(orm.AbstractModel):
+class QwebView(models.AbstractModel):
     _name = 'ir.qweb.field.qweb'
     _inherit = 'ir.qweb.field.qweb'
 

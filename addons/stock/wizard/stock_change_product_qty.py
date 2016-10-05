@@ -16,7 +16,7 @@ class ProductChangeQuantity(models.TransientModel):
     product_variant_count = fields.Integer('Variant Count', related='product_tmpl_id.product_variant_count')
     new_quantity = fields.Float(
         'New Quantity on Hand', default=1,
-        digits_compute=dp.get_precision('Product Unit of Measure'), required=True,
+        digits=dp.get_precision('Product Unit of Measure'), required=True,
         help='This quantity is expressed in the Default Unit of Measure of the product.')
     lot_id = fields.Many2one('stock.production.lot', 'Lot/Serial Number', domain="[('product_id','=',product_id)]")
     location_id = fields.Many2one('stock.location', 'Location', required=True, domain="[('usage', '=', 'internal')]")
@@ -44,6 +44,23 @@ class ProductChangeQuantity(models.TransientModel):
         if self.product_id:
             self.product_tmpl_id = self.onchange_product_id_dict(self.product_id.id)['product_tmpl_id']
 
+    @api.multi
+    def _prepare_inventory_line(self):
+        product = self.product_id.with_context(location=self.location_id.id, lot_id=self.lot_id.id)
+        th_qty = product.qty_available
+
+        res = {
+               'product_qty': self.new_quantity,
+               'location_id': self.location_id.id,
+               'product_id': self.product_id.id,
+               'product_uom_id': self.product_id.uom_id.id,
+               'theoretical_qty': th_qty,
+               'prod_lot_id': self.lot_id.id,
+        }
+
+        return res
+
+
     def onchange_product_id_dict(self, product_id):
         return {
             'product_tmpl_id': self.env['product.product'].browse(product_id).product_tmpl_id.id,
@@ -66,15 +83,8 @@ class ProductChangeQuantity(models.TransientModel):
         Inventory = self.env['stock.inventory']
         for wizard in self:
             product = wizard.product_id.with_context(location=wizard.location_id.id, lot_id=wizard.lot_id.id)
-            th_qty = product.qty_available
-            line_data = {
-                'product_qty': wizard.new_quantity,
-                'location_id': wizard.location_id.id,
-                'product_id': wizard.product_id.id,
-                'product_uom_id': wizard.product_id.uom_id.id,
-                'theoretical_qty': th_qty,
-                'prod_lot_id': wizard.lot_id.id
-            }
+            line_data = wizard._prepare_inventory_line()
+
 
             if wizard.product_id.id and wizard.lot_id.id:
                 inventory_filter = 'none'

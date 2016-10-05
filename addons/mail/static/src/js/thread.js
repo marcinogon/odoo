@@ -72,6 +72,7 @@ var Thread = Widget.extend({
             display_document_link: true,
             display_avatar: true,
             squash_close_messages: true,
+            display_email_icon: true,
             display_reply_icon: false,
         });
         this.expanded_msg_ids = [];
@@ -232,20 +233,6 @@ var Thread = Widget.extend({
             msg.day = _t("Yesterday");
         } else {
             msg.day = msg.date.format('LL');
-        }
-
-        if (message.tracking_value_ids && message.tracking_value_ids.length) {
-            _.each(message.tracking_value_ids, function(f) {
-                if (_.contains(['date', 'datetime'], f.field_type)) {
-                    var format = (f.field_type === 'date') ? 'LL' : 'LLL';
-                    if (f.old_value) {
-                        f.old_value = moment.utc(f.old_value).local().format(format);
-                    }
-                    if (f.new_value) {
-                        f.new_value = moment.utc(f.new_value).local().format(format);
-                    }
-                }
-            });
         }
 
         if (_.contains(this.expanded_msg_ids, message.id)) {

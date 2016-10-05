@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-import datetime
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from openerp import http
-from openerp.exceptions import AccessError
-from openerp.http import request
+from odoo import http, _
+from odoo.exceptions import AccessError
+from odoo.http import request
 
-from openerp.addons.website_portal.controllers.main import website_account
+from odoo.addons.website_portal.controllers.main import website_account
 
 
 class website_account(website_account):
 
     @http.route()
-    def account(self):
+    def account(self, **kw):
         """ Add sales documents to main account page """
-        response = super(website_account, self).account()
+        response = super(website_account, self).account(**kw)
         partner = request.env.user.partner_id
 
         SaleOrder = request.env['sale.order']
@@ -55,7 +55,7 @@ class website_account(website_account):
 
         archive_groups = self._get_archive_groups('sale.order', domain)
         if date_begin and date_end:
-            domain += [('create_date', '>=', date_begin), ('create_date', '<', date_end)]
+            domain += [('create_date', '>', date_begin), ('create_date', '<=', date_end)]
 
         # count for pager
         quotation_count = SaleOrder.search_count(domain)
@@ -77,7 +77,7 @@ class website_account(website_account):
             'archive_groups': archive_groups,
             'default_url': '/my/quotes',
         })
-        return request.website.render("website_portal_sale.portal_my_quotations", values)
+        return request.render("website_portal_sale.portal_my_quotations", values)
 
     @http.route(['/my/orders', '/my/orders/page/<int:page>'], type='http', auth="user", website=True)
     def portal_my_orders(self, page=1, date_begin=None, date_end=None, **kw):
@@ -91,7 +91,7 @@ class website_account(website_account):
         ]
         archive_groups = self._get_archive_groups('sale.order', domain)
         if date_begin and date_end:
-            domain += [('create_date', '>=', date_begin), ('create_date', '<', date_end)]
+            domain += [('create_date', '>', date_begin), ('create_date', '<=', date_end)]
 
         # count for pager
         order_count = SaleOrder.search_count(domain)
@@ -114,7 +114,7 @@ class website_account(website_account):
             'archive_groups': archive_groups,
             'default_url': '/my/orders',
         })
-        return request.website.render("website_portal_sale.portal_my_orders", values)
+        return request.render("website_portal_sale.portal_my_orders", values)
 
     @http.route(['/my/orders/<int:order>'], type='http', auth="user", website=True)
     def orders_followup(self, order=None, **kw):
@@ -123,9 +123,9 @@ class website_account(website_account):
             order.check_access_rights('read')
             order.check_access_rule('read')
         except AccessError:
-            return request.website.render("website.403")
+            return request.render("website.403")
         order_invoice_lines = {il.product_id.id: il.invoice_id for il in order.invoice_ids.mapped('invoice_line_ids')}
-        return request.website.render("website_portal_sale.orders_followup", {
+        return request.render("website_portal_sale.orders_followup", {
             'order': order.sudo(),
             'order_invoice_lines': order_invoice_lines,
         })
@@ -146,7 +146,7 @@ class website_account(website_account):
         ]
         archive_groups = self._get_archive_groups('account.invoice', domain)
         if date_begin and date_end:
-            domain += [('create_date', '>=', date_begin), ('create_date', '<', date_end)]
+            domain += [('create_date', '>', date_begin), ('create_date', '<=', date_end)]
 
         # count for pager
         invoice_count = AccountInvoice.search_count(domain)
@@ -168,4 +168,18 @@ class website_account(website_account):
             'archive_groups': archive_groups,
             'default_url': '/my/invoices',
         })
-        return request.website.render("website_portal_sale.portal_my_invoices", values)
+        return request.render("website_portal_sale.portal_my_invoices", values)
+
+    def details_form_validate(self, data):
+        error, error_message = super(website_account, self).details_form_validate(data)
+        # prevent VAT/name change if invoices exist
+        partner = request.env['res.users'].browse(request.uid).partner_id
+        invoices = request.env['account.invoice'].sudo().search_count([('partner_id', '=', partner.id), ('state', 'not in', ['draft', 'cancel'])])
+        if invoices:
+            if data.get('vat', partner.vat) != partner.vat:
+                error['vat'] = 'error'
+                error_message.append(_('Changing VAT number is not allowed once invoices have been issued for your account. Please contact us directly for this operation.'))
+            if data.get('name', partner.name) != partner.name:
+                error['name'] = 'error'
+                error_message.append(_('Changing your name is not allowed once invoices have been issued for your account. Please contact us directly for this operation.'))
+        return error, error_message

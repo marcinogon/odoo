@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<openerp>
+<odoo>
     <data>
         <template id="external_layout_barcode_right" inherit_id="report.external_layout" primary="True">
             <xpath expr="//t[@t-call='report.external_layout_header']" position="attributes">
@@ -24,12 +24,12 @@
                                     <div t-if="o.move_lines and o.move_lines[0].partner_id and o.move_lines[0].partner_id.id != o.partner_id.id">
                                         <span><strong>Delivery Address:</strong></span>
                                         <div t-field="o.move_lines[0].partner_id"
-                                            t-field-options='{"widget": "contact", "fields": ["address", "name", "phone", "fax"], "no_marker": True, "phone_icons": True}'/>
+                                            t-options='{"widget": "contact", "fields": ["address", "name", "phone", "fax"], "no_marker": True, "phone_icons": True}'/>
                                     </div>
                                     <div t-if="o.picking_type_id.code != 'internal' and (not o.move_lines or not o.move_lines[0].partner_id) and o.picking_type_id.warehouse_id.partner_id">
                                         <span><strong>Warehouse Address:</strong></span>
                                         <div t-field="o.picking_type_id.warehouse_id.partner_id"
-                                            t-field-options='{"widget": "contact", "fields": ["address", "name", "phone", "fax"], "no_marker": True, "phone_icons": True}'/>
+                                            t-options='{"widget": "contact", "fields": ["address", "name", "phone", "fax"], "no_marker": True, "phone_icons": True}'/>
                                     </div>
                                 </div>
                                 <div class="col-xs-5 col-xs-offset-1">
@@ -44,8 +44,8 @@
                                     </div>
                                     <div t-if="o.partner_id" name="partner_header">
                                         <div t-field="o.partner_id"
-                                           t-field-options='{"widget": "contact", "fields": ["name", "phone"], "no_marker": True, "phone_icons": True}'/>
-                                        <p t-if="o.partner_id.vat">VAT: <span t-field="o.partner_id.vat"/></p>
+                                           t-options='{"widget": "contact", "fields": ["name", "phone"], "no_marker": True, "phone_icons": True}'/>
+                                        <p t-if="o.sudo().partner_id.vat">VAT: <span t-field="o.sudo().partner_id.vat"/></p>
                                     </div>
                                 </div>
                             </div>
@@ -80,13 +80,14 @@
                             <br/>
                             <br/>
                             <table class="table table-condensed" t-if="o.pack_operation_ids">
+                              <t t-set="has_barcode" t-value="any([pack_operation.product_id and pack_operation.product_id.barcode or pack_operation.package_id for pack_operation in o.pack_operation_ids])"/>
                               <t t-set="has_serial_number" t-value="o.pack_operation_ids.filtered('pack_lot_ids')" groups="stock.group_production_lot"/>
                               <thead>
                                 <tr>
                                     <th><strong>Product</strong></th>
                                     <th class="text-right"><strong>Quantity</strong></th>
                                     <t t-if="o.picking_type_id.code != 'incoming'"><th><strong>Source</strong></th></t>
-                                    <th t-if="any([pack_operation.product_id and pack_operation.product_id.barcode or pack_operation.package_id for pack_operation in o.pack_operation_ids])" class="text-center">
+                                    <th t-if="has_barcode" class="text-center">
                                         <strong>Barcode</strong>
                                     </th>
                                     <th t-if="has_serial_number">
@@ -96,9 +97,7 @@
                                 </tr>
                               </thead>
                               <tbody>
-                                <t t-set="pack_operation_ids" t-value="o.pack_operation_ids"/>
-                                <t groups="base.group_portal" t-set="pack_operation_ids" t-value="o.pack_operation_ids.sudo()"/>
-                                <tr t-foreach="pack_operation_ids" t-as="pack_operation">
+                                <tr t-foreach="o.pack_operation_ids" t-as="pack_operation">
                                     <td><span t-field="pack_operation.product_id"/><br/>
                                         <span t-field="pack_operation.product_id.description_picking"/>
                                         <t t-if="not pack_operation.product_id and pack_operation.package_id"><span  t-field="pack_operation.package_id"/></t></td>
@@ -108,7 +107,7 @@
                                         <span t-field="pack_operation.package_id"/>
                                         </td>
                                     </t>
-                                    <td>
+                                    <td t-if="has_barcode">
                                         <span t-if="pack_operation.product_id and pack_operation.product_id.barcode">
                                             <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' % ('Code128', pack_operation.product_id.barcode, 600, 100)" style="width:300px;height:50px"/>
                                         </span>
@@ -138,7 +137,7 @@
                                 </tr>
                               </tbody>
                             </table>
-                            <p t-if="not o.pack_operation_ids">
+                            <p t-if="o.state in ['draft', 'waiting', 'confirmed']">
                                 You do not have any products reserved for this picking.  Please click the 'Reserve' button
                                 to check if products are available.
                             </p>
@@ -149,4 +148,4 @@
              </t>
         </template>
     </data>
-</openerp>
+</odoo>

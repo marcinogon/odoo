@@ -30,6 +30,12 @@ class PosConfig(models.Model):
     _name = 'pos.config'
 
     def _default_sale_journal(self):
+        journal = self.env.ref('point_of_sale.pos_sale_journal', raise_if_not_found=False)
+        if journal and journal.company_id == self.env.user.company_id:
+            return journal
+        return self._default_invoice_journal()
+
+    def _default_invoice_journal(self):
         return self.env['account.journal'].search([('type', '=', 'sale'), ('company_id', '=', self.env.user.company_id.id)], limit=1)
 
     def _default_pricelist(self):
@@ -61,6 +67,11 @@ class PosConfig(models.Model):
         domain=[('type', '=', 'sale')],
         help="Accounting journal used to post sales entries.",
         default=_default_sale_journal)
+    invoice_journal_id = fields.Many2one(
+        'account.journal', string='Invoice Journal',
+        domain=[('type', '=', 'sale')],
+        help="Accounting journal used to create invoices.",
+        default=_default_invoice_journal)
     currency_id = fields.Many2one('res.currency', compute='_compute_currency', string="Currency")
     iface_cashdrawer = fields.Boolean(string='Cashdrawer', help="Automatically open the cashdrawer")
     iface_payment_terminal = fields.Boolean(string='Payment Terminal', help="Enables Payment Terminal integration")
@@ -71,7 +82,7 @@ class PosConfig(models.Model):
     iface_invoicing = fields.Boolean(string='Invoicing', help='Enables invoice generation from the Point of Sale', default=True)
     iface_big_scrollbars = fields.Boolean('Large Scrollbars', help='For imprecise industrial touchscreens')
     iface_print_auto = fields.Boolean(string='Automatic Receipt Printing', default=False,
-        help='The receipt will automatically be p-rinted at the end of each order')
+        help='The receipt will automatically be printed at the end of each order')
     iface_print_skip_screen = fields.Boolean(string='Skip Receipt Screen', default=True,
         help='The receipt screen will be skipped if the receipt can be printed automatically.')
     iface_precompute_cash = fields.Boolean(string='Prefill Cash Payment',
@@ -160,6 +171,11 @@ class PosConfig(models.Model):
         if self.journal_id and self.journal_id.company_id.id != self.company_id.id:
             raise UserError(_("The company of the sale journal is different than the one of point of sale"))
 
+    @api.constrains('company_id', 'invoice_journal_id')
+    def _check_company_journal(self):
+        if self.invoice_journal_id and self.invoice_journal_id.company_id.id != self.company_id.id:
+            raise UserError(_("The invoice journal and the point of sale must belong to the same company"))
+
     @api.constrains('company_id', 'journal_ids')
     def _check_company_payment(self):
         if self.env['account.journal'].search_count([('id', 'in', self.journal_ids.ids), ('company_id', '!=', self.company_id.id)]):
@@ -227,7 +243,8 @@ class PosConfig(models.Model):
     @api.multi
     def open_existing_session_cb_close(self):
         assert len(self.ids) == 1, "you can open only one session at a time"
-        self.current_session_id.signal_workflow('cashbox_control')
+        if self.current_session_id.cash_control:
+            self.current_session_id.action_pos_session_closing_control()
         return self.open_session_cb()
 
     @api.multi

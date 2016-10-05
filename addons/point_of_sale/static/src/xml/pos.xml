@@ -84,6 +84,14 @@
         </div>
     </t>
 
+    <t t-name="SaleDetailsButton">
+        <div class="oe_status">
+            <div class="js_connected oe_icon">
+                <i class='fa fa-fw fa-print'></i>
+            </div>
+        </div>
+    </t>
+
     <t t-name="HeaderButtonWidget">
         <div class="header-button">
             <t t-esc="widget.label" />
@@ -274,7 +282,7 @@
                         <t t-esc="widget.get_product_weight_string()" />
                     </div>
                     <div class='product-price'>
-                        <t t-esc="widget.format_currency(widget.get_product_price()) + '/Kg'" />
+                        <t t-esc="widget.format_currency(widget.get_product_price()) + '/' + widget.get_product_uom()" />
                     </div>
                     <div class='computed-price'>
                         123.14 €
@@ -316,15 +324,15 @@
                 <div class='client-details-left'>
                     <div class='client-detail'>
                         <span class='label'>Street</span>
-                        <input class='detail client-address-street' name='street'       t-att-value='partner.street' placeholder='Street'></input>
+                        <input class='detail client-address-street' name='street'       t-att-value='partner.street || ""' placeholder='Street'></input>
                     </div>
                     <div class='client-detail'>
                         <span class='label'>City</span>
-                        <input class='detail client-address-city'   name='city'         t-att-value='partner.city' placeholder='City'></input>
+                        <input class='detail client-address-city'   name='city'         t-att-value='partner.city || ""' placeholder='City'></input>
                     </div>
                     <div class='client-detail'>
                         <span class='label'>Postcode</span>
-                        <input class='detail client-address-zip'    name='zip'          t-att-value='partner.zip' placeholder='ZIP'></input>
+                        <input class='detail client-address-zip'    name='zip'          t-att-value='partner.zip || ""' placeholder='ZIP'></input>
                     </div>
                     <div class='client-detail'>
                         <span class='label'>Country</span>
@@ -372,11 +380,21 @@
                 <div class='client-details-left'>
                     <div class='client-detail'>
                         <span class='label'>Address</span>
-                        <span class='detail client-address'><t t-esc='partner.address' /></span>
+                        <t t-if='partner.address'>
+                            <span class='detail client-address'><t t-esc='partner.address' /></span>
+                        </t>
+                        <t t-if='!partner.address'>
+                            <span class='detail client-address empty'>N/A</span>
+                        </t>
                     </div>
                     <div class='client-detail'>
                         <span class='label'>Email</span>
-                        <span class='detail client-email'><t t-esc='partner.email' /></span>
+                        <t t-if='partner.email'>
+                            <span class='detail client-email'><t t-esc='partner.email' /></span>
+                        </t>
+                        <t t-if='!partner.email'>
+                            <span class='detail client-email empty'>N/A</span>
+                        </t>
                     </div>
                     <div class='client-detail'>
                         <span class='label'>Phone</span>
@@ -682,9 +700,6 @@
                 <br/>
             </t>
             <div font='b'>
-                <t t-if='receipt.shop.name'>
-                    <div><t t-esc='receipt.shop.name' /></div>
-                </t>
                 <t t-if='receipt.company.contact_address'>
                     <div><t t-esc='receipt.company.contact_address' /></div>
                 </t>
@@ -838,6 +853,90 @@
 
         </receipt>
     </t>
+
+    <t t-name="SaleDetailsReport">
+        <receipt align='center' width='40' value-thousands-separator='' >
+            <t t-if='pos.company_logo_base64'>
+                <img t-att-src='pos.company_logo_base64' />
+                <br/>
+            </t>
+            <t t-if='!pos.company_logo_base64'>
+                <h1><t t-esc='company.name' /></h1>
+                <br/>
+            </t>
+            <br /><br />
+
+            <!-- Orderlines -->
+
+            <div class='orderlines' line-ratio='0.6'>
+                <t t-foreach='products' t-as='line'>
+                    <line>
+                        <left><t t-esc='line.product_name' /></left>
+                        <right>
+                            <value value-decimals='2' value-autoint='on'>
+                                <t t-esc='line.quantity' />
+                            </value>
+                            <t t-if='line.uom !== "Unit(s)"'>
+                                <t t-esc='line.uom' /> 
+                            </t>
+                        </right>
+                        <right>
+                            <value><t t-esc='line.price_unit' /></value>
+                        </right>
+                    </line>
+                    <t t-if='line.discount !== 0'>
+                        <line indent='1'><left>Discount: <t t-esc='line.discount' />%</left></line>
+                    </t>
+                </t>
+            </div>
+
+            <br/>
+            <line><left>------------------------</left></line>
+            <br/>
+
+            <line>
+                <left>Payments:</left>
+            </line>
+            <line t-foreach='payments' t-as='payment'>
+                <left><t t-esc='payment.name' /></left>
+                <right>
+                    <t t-esc='payment.total'/>
+                </right>
+            </line>
+
+            <br/>
+            <line><left>------------------------</left></line>
+            <br/>
+
+            <line>
+                <left>Taxes:</left>
+            </line>
+            <line t-foreach='taxes' t-as='taxe'>
+                <left><t t-esc='taxe.name' /></left>
+                <right>
+                    <t t-esc='taxe.total'/>
+                </right>
+            </line>
+
+            <br/>
+            <line><left>------------------------</left></line>
+            <br/>
+
+            <line>
+                <left>Total:</left>
+                <right>
+                    <t t-esc='total_paid'/>
+                </right>
+            </line>
+
+            <br/>
+            <div font='b'>
+                <div><t t-esc='date' /></div>
+            </div>
+
+        </receipt>
+    </t>
+
 
     <t t-name="PopupWidget">
         <div class="modal-dialog">
@@ -1303,7 +1402,6 @@
             <t t-esc="widget.pos.company.name"/><br />
             Phone: <t t-esc="widget.pos.company.phone || ''"/><br />
             User: <t t-esc="widget.pos.cashier ? widget.pos.cashier.name : widget.pos.user.name"/><br />
-            Shop: <t t-esc="widget.pos.shop.name"/><br />
             <br />
             <t t-if="receipt.header">
                 <div style='text-align:center'>
